@@ -28,7 +28,7 @@ async def grant_access(
     workspaceId: str,
     entityId: str,
     userId: str,
-    entityType: EntityType = EntityType.workspace,
+    entityType: EntityType ,
     role: MemberRole = MemberRole.viewer,
     grantedBySystem: bool = True,
     grantedById: Optional[str] = None,

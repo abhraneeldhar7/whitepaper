@@ -2,7 +2,7 @@ import random
 import string
 from typing import Any
 
-from app.schemas.schema import MemberRole
+from app.schemas.schema import MemberRole, EntityType
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from svix.webhooks import Webhook, WebhookVerificationError
@@ -85,6 +85,7 @@ async def handle_user_created(data: dict[str, Any], session: AsyncSession) -> No
         db=session,
         workspaceId=workspace.workspaceId,
         entityId=workspace.workspaceId,
+        entityType= EntityType.workspace,
         role=MemberRole.owner,
         userId=clerk_user_id,
     )
