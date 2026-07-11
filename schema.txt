@@ -1,0 +1,113 @@
+user:
+userId:str,
+name:str,
+avatarUrl:str|null,
+email:str,
+username:str,
+bio:str,
+createdAt:date,
+updatedAt:date
+
+---
+
+user custom claims set by clerk:
+roles:{role:str, entityId:str}[]
+
+// this is not a table, its the object structure of public metadata
+
+---
+
+workspace:
+ownerId:string,
+workspaceId:str,
+workspaceSlug:str|null,
+workspaceType:"personal"|"shared",
+workspaceName:str,
+plan: "free"|"pro"|"enterprise",
+status: "active"|"locked",
+createdAt:date,
+updatedAt:date
+
+---
+
+subscription:
+subId: str
+workspaceId: str
+plan: "pro" | "enterprise"
+razorpay_subscription_id: str | null
+razorpay_customer_id: str | null
+status: "active" | "past_due" | "canceled" | "incomplete"
+starts_at: datetime
+ends_at: datetime | null
+last_payment_at: datetime | null
+next_payment_at: datetime | null
+created_at: datetime
+
+---
+
+entity_members:
+workspaceId: str,
+entityId:str
+userId: str,
+entityType:"workspace" | "project" | "collection" | "paper",
+role: "owner"|"admin"|"editor"|"viewer",
+grantedAt: date,
+grantedBySystem:boolean,
+grantedById:str|null
+
+---
+
+project:
+workspaceId:str,
+projectId:str,
+name:str,
+publicSlug: str,
+description:str,
+logoUrl:str|null,
+bannerUrl:str|null,
+visibility: "private"|"public"
+createdAt: date,
+updatedAt: date
+
+
+---
+
+collection:
+workspaceId:str,
+projectId:str,
+collectionId:str,
+name:str,
+publicSlug: str,
+description:str,
+bannerUrl:str|null,
+visibility:"private"|"public"
+createdAt: date,
+updatedAt: date,
+
+---
+
+paper:
+workspaceId:str,
+projectId:str|null,
+collectionId:str|null,
+paperId:str,
+title:str,
+publicSlug:str,
+thumbnailUrl:str|null,
+visibility:"private"|"public",
+createdAt: date,
+updatedAt: date,
+
+---
+
+paper_content:
+paperId: str,
+content: str
+
+// this separate content table is for not burning the database when quering and returning an array of papers. but when a paper is fetched by id or slug, this will be fetched and returned in one go.
+
+
+Store the schema like this in fastapi so it can be used both as pydantic types and orm models.
+
+class Paper(SQLModel, table=True):  # 👈 This is BOTH a table and a schema
+    __tablename__ = "papers"
