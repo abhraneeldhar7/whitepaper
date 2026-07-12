@@ -90,8 +90,6 @@ async def handle_user_created(data: dict[str, Any], session: AsyncSession) -> No
         userId=clerk_user_id,
     )
 
-    await session.commit()
-
 
 async def handle_user_deleted(data: dict[str, Any], session: AsyncSession) -> None:
     clerk_user_id = data.get("id")
@@ -99,7 +97,6 @@ async def handle_user_deleted(data: dict[str, Any], session: AsyncSession) -> No
         return
 
     await delete_user(session, clerk_user_id)
-    await session.commit()
 
 
 @router.post("/clerk")

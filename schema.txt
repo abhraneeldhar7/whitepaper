@@ -5,8 +5,8 @@ avatarUrl:str|null,
 email:str,
 username:str,
 bio:str,
-createdAt:date,
-updatedAt:date
+createdAt:datetime,
+updatedAt:datetime
 
 ---
 
@@ -25,8 +25,8 @@ workspaceType:"personal"|"shared",
 workspaceName:str,
 plan: "free"|"pro"|"enterprise",
 status: "active"|"locked",
-createdAt:date,
-updatedAt:date
+createdAt:datetime,
+updatedAt:datetime
 
 ---
 
@@ -34,14 +34,14 @@ subscription:
 subId: str
 workspaceId: str
 plan: "pro" | "enterprise"
-razorpay_subscription_id: str | null
-razorpay_customer_id: str | null
+razorpaySubscriptionId: str | null
+razorpayCustomerId: str | null
 status: "active" | "past_due" | "canceled" | "incomplete"
-starts_at: datetime
-ends_at: datetime | null
-last_payment_at: datetime | null
-next_payment_at: datetime | null
-created_at: datetime
+startsAt: datetime
+endsAt: datetime | null
+lastPaymentAt: datetime | null
+nextPaymentAt: datetime | null
+createdAt: datetime
 
 ---
 
@@ -51,7 +51,7 @@ entityId:str
 userId: str,
 entityType:"workspace" | "project" | "collection" | "paper",
 role: "owner"|"admin"|"editor"|"viewer",
-grantedAt: date,
+grantedAt: datetime,
 grantedBySystem:boolean,
 grantedById:str|null
 
@@ -66,8 +66,8 @@ description:str,
 logoUrl:str|null,
 bannerUrl:str|null,
 visibility: "private"|"public"
-createdAt: date,
-updatedAt: date
+createdAt: datetime,
+updatedAt: datetime
 
 
 ---
@@ -81,8 +81,8 @@ publicSlug: str,
 description:str,
 bannerUrl:str|null,
 visibility:"private"|"public"
-createdAt: date,
-updatedAt: date,
+createdAt: datetime,
+updatedAt: datetime,
 
 ---
 
@@ -95,8 +95,8 @@ title:str,
 publicSlug:str,
 thumbnailUrl:str|null,
 visibility:"private"|"public",
-createdAt: date,
-updatedAt: date,
+createdAt: datetime,
+updatedAt: datetime,
 
 ---
 

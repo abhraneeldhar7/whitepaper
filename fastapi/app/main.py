@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import db
+from app.api.private.router import router as private_router
 from app.api.webhooks.router import router as webhooks_router
 
 
@@ -26,4 +27,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(private_router)
 app.include_router(webhooks_router)

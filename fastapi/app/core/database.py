@@ -30,7 +30,14 @@ class DatabaseManager:
 
     async def get_db(self) -> AsyncGenerator[AsyncSession, None]:
         async with self.async_session() as session:
-            yield session
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
 
 
 db = DatabaseManager()

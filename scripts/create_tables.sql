@@ -4,23 +4,23 @@ CREATE TABLE IF NOT EXISTS "users" (
     "name" VARCHAR(255) NOT NULL,
     "avatarUrl" VARCHAR(500),
     "email" VARCHAR(255) NOT NULL,
-    "username" VARCHAR(255) NOT NULL,
+    "username" VARCHAR(255) NOT NULL UNIQUE,
     "bio" TEXT NOT NULL DEFAULT '',
-    "createdAt" DATE NOT NULL,
-    "updatedAt" DATE NOT NULL
+    "createdAt" TIMESTAMP NOT NULL,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- ── Workspaces ──
 CREATE TABLE IF NOT EXISTS "workspaces" (
     "ownerId" VARCHAR(255) NOT NULL REFERENCES "users"("userId") ON DELETE CASCADE,
     "workspaceId" VARCHAR(32) PRIMARY KEY,
-    "workspaceSlug" VARCHAR(255),
+    "workspaceSlug" VARCHAR(255) UNIQUE,
     "workspaceType" VARCHAR(20) NOT NULL,
     "workspaceName" VARCHAR(255) NOT NULL,
     "plan" VARCHAR(20) NOT NULL,
     "status" VARCHAR(20) NOT NULL,
-    "createdAt" DATE NOT NULL,
-    "updatedAt" DATE NOT NULL
+    "createdAt" TIMESTAMP NOT NULL,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- ── Entity Members ──
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS "entity_members" (
     "userId" VARCHAR(255) NOT NULL REFERENCES "users"("userId") ON DELETE CASCADE,
     "entityType" VARCHAR(20) NOT NULL,
     "role" VARCHAR(20) NOT NULL,
-    "grantedAt" DATE NOT NULL,
+    "grantedAt" TIMESTAMP NOT NULL,
     "grantedBySystem" BOOLEAN NOT NULL,
     "grantedById" VARCHAR(255) REFERENCES "users"("userId") ON DELETE SET NULL,
     PRIMARY KEY ("workspaceId", "entityId", "userId")
@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS "projects" (
     "logoUrl" VARCHAR(500),
     "bannerUrl" VARCHAR(500),
     "visibility" VARCHAR(20) NOT NULL,
-    "createdAt" DATE NOT NULL,
-    "updatedAt" DATE NOT NULL
+    "createdAt" TIMESTAMP NOT NULL,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- ── Collections ──
@@ -60,8 +60,8 @@ CREATE TABLE IF NOT EXISTS "collections" (
     "description" TEXT NOT NULL,
     "bannerUrl" VARCHAR(500),
     "visibility" VARCHAR(20) NOT NULL,
-    "createdAt" DATE NOT NULL,
-    "updatedAt" DATE NOT NULL
+    "createdAt" TIMESTAMP NOT NULL,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- ── Papers ──
@@ -74,8 +74,8 @@ CREATE TABLE IF NOT EXISTS "papers" (
     "publicSlug" VARCHAR(255) NOT NULL,
     "thumbnailUrl" VARCHAR(500),
     "visibility" VARCHAR(20) NOT NULL,
-    "createdAt" DATE NOT NULL,
-    "updatedAt" DATE NOT NULL
+    "createdAt" TIMESTAMP NOT NULL,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- ── Paper Content ──

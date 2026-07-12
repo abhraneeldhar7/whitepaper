@@ -1,3 +1,8 @@
-Bro I can code I'm only using you to save time, only do what's asked, no extra stuff. You can suggest me changes, but don't do extra stuff without asking me first.
-Only speak english.
-If there is any confusion with the prompt, always verify before continuing.
+- Bro I can code I'm only using you to save time, only do what's asked, no extra stuff. You can suggest me changes, but don't do extra stuff without asking me first.
+- Only speak english.
+- If there is any confusion with the prompt, always verify before continuing.
+- Don't overengineer. Simple plain stuff is fine.
+- Don't create extra helper functions nobody asked for.
+- Don't restructure code patterns that already work. Stick to the existing pattern.
+- When the I say "fix X", fix X — not X, Y, Z, and refactor the whole thing.
+- Don't future proof stuff if not asked to.

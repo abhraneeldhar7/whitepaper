@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from enum import StrEnum
 from typing import Optional
 
@@ -15,10 +15,10 @@ class User(SQLModel, table=True):
     name: str
     avatarUrl: Optional[str] = None
     email: str
-    username: str
+    username: str = Field(unique=True)
     bio: str
-    createdAt: date
-    updatedAt: date
+    createdAt: datetime
+    updatedAt: datetime
 
 
 # ── Clerk custom claims (NOT a table) ──
@@ -51,13 +51,13 @@ class Workspace(SQLModel, table=True):
 
     ownerId: str
     workspaceId: str = Field(primary_key=True)
-    workspaceSlug: Optional[str] = None
+    workspaceSlug: Optional[str] = Field(default=None, unique=True)
     workspaceType: WorkspaceType = Field(sa_type=VARCHAR(20))
     workspaceName: str
     plan: Plan = Field(sa_type=VARCHAR(20))
     status: WorkspaceStatus = Field(sa_type=VARCHAR(20))
-    createdAt: date
-    updatedAt: date
+    createdAt: datetime
+    updatedAt: datetime
 
 
 # ── Subscription ──
@@ -114,7 +114,7 @@ class EntityMembers(SQLModel, table=True):
     userId: str = Field(primary_key=True)
     entityType: EntityType = Field(sa_type=VARCHAR(20))
     role: MemberRole = Field(sa_type=VARCHAR(20))
-    grantedAt: date
+    grantedAt: datetime
     grantedBySystem: bool
     grantedById: Optional[str] = None
 
@@ -137,8 +137,8 @@ class Project(SQLModel, table=True):
     logoUrl: Optional[str] = None
     bannerUrl: Optional[str] = None
     visibility: Visibility = Field(sa_type=VARCHAR(20))
-    createdAt: date
-    updatedAt: date
+    createdAt: datetime
+    updatedAt: datetime
 
 
 # ── Collection ──
@@ -154,8 +154,8 @@ class Collection(SQLModel, table=True):
     description: str
     bannerUrl: Optional[str] = None
     visibility: Visibility = Field(sa_type=VARCHAR(20))
-    createdAt: date
-    updatedAt: date
+    createdAt: datetime
+    updatedAt: datetime
 
 
 # ── Paper ──
@@ -171,8 +171,8 @@ class Paper(SQLModel, table=True):
     publicSlug: str
     thumbnailUrl: Optional[str] = None
     visibility: Visibility = Field(sa_type=VARCHAR(20))
-    createdAt: date
-    updatedAt: date
+    createdAt: datetime
+    updatedAt: datetime
 
 
 # ── Paper Content ──

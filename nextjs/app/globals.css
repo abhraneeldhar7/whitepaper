@@ -26,7 +26,7 @@
   /* 12px - captions, timestamps */
   --text-sm: 0.9rem;
   /* 14px - buttons, UI labels, nav */
-  --text-base: 1rem;
+  --text-base: 0.95rem;
   /* 16px - body, reading text */
   --text-lg: 1.25rem;
   /* 20px - card titles, dialog headings */
@@ -44,11 +44,11 @@
 
 
   --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 14px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
 
   --duration-fast: 200ms;
-  --duration-default: 300ms;
+  --duration-default: 400ms;
   --duration-slow: 500ms;
 }
 
@@ -114,7 +114,7 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: oklch(94.309% 0.00011 271.152);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
