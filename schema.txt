@@ -50,7 +50,7 @@ workspaceId: str,
 entityId:str
 userId: str,
 entityType:"workspace" | "project" | "collection" | "paper",
-role: "owner"|"admin"|"editor"|"viewer",
+role: "owner"|"admin"|"member"|"viewer",
 grantedAt: datetime,
 grantedBySystem:boolean,
 grantedById:str|null

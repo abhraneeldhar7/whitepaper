@@ -81,14 +81,14 @@ class Subscription(SQLModel, table=True):
     subId: str = Field(primary_key=True)
     workspaceId: str
     plan: SubscriptionPlan = Field(sa_type=VARCHAR(20))
-    razorpay_subscription_id: Optional[str] = None
-    razorpay_customer_id: Optional[str] = None
+    razorpaySubscriptionId: Optional[str] = None
+    razorpayCustomerId: Optional[str] = None
     status: SubscriptionStatus = Field(sa_type=VARCHAR(20))
-    starts_at: datetime
-    ends_at: Optional[datetime] = None
-    last_payment_at: Optional[datetime] = None
-    next_payment_at: Optional[datetime] = None
-    created_at: datetime
+    startsAt: datetime
+    endsAt: Optional[datetime] = None
+    lastPaymentAt: Optional[datetime] = None
+    nextPaymentAt: Optional[datetime] = None
+    createdAt: datetime
 
 
 # ── Entity Members ──
