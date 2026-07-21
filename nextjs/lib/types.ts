@@ -6,7 +6,7 @@ export type WorkspaceStatus = "active" | "locked";
 export type SubscriptionPlan = "pro" | "enterprise";
 export type SubscriptionStatus = "active" | "past_due" | "canceled" | "incomplete";
 export type EntityType = "workspace" | "project" | "collection" | "paper";
-export type MemberRole = "owner" | "admin" | "editor" | "viewer";
+export type MemberRole = "owner" | "admin" | "member" | "viewer";
 export type Visibility = "private" | "public";
 
 // ── Clerk ──
@@ -14,6 +14,7 @@ export type Visibility = "private" | "public";
 export interface ClerkUserRole {
   role: string;
   entityId: string;
+  entityType: EntityType;
 }
 
 // ── User ──

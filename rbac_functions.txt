@@ -25,7 +25,6 @@ already exists in fastapi\app\core\security.py
 
 3. can(role, entity_type, action)
 No DB call. Static lookup table defined in app/shared/permissions.py
-Roles are entity-specific (e.g. "editor" exists on project/collection/paper but NOT on workspace).
 Actions: view, edit, delete, add_members, remove_members
 
 
