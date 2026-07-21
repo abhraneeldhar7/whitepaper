@@ -29,3 +29,8 @@ app.add_middleware(
 
 app.include_router(private_router)
 app.include_router(webhooks_router)
+
+
+@app.get("/")
+async def root():
+    return {"message": settings.APP_NAME}

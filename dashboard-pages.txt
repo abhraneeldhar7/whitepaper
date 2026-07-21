@@ -1,0 +1,27 @@
+/dashboard
+tabs: overview, members, plan, settings, how to use.
+
+/dashboard/[project-Id]
+tabs: overview, memebers, settings, how to use.
+
+/dashboard/[project-Id]/[collection-Id]
+tabs: overview, memebers, settings, how to use.
+
+
+plan to handle data.
+wrap the dashboards in a dashboard provider.
+provider's work is to facilitate use of data (per page content and members list of the workspace) and let the pages use, modify, refresh them in a clean way.
+when each page is loaded, check if the data is present in zustand if not then load. and every 20s (aignoring first) it will refresh without loader or skeleton, just refresh and render the updated list of papers or projects or collecitons.
+in zustand, maintain a local repository of all projects and papers and collections, instead of separate level wise, its way more convinient. just make helpers in the provider to work with the filtered data.
+same with members data, check if its already there, if not then fetch the whole of workspace's members in every page and store/use same way. will be later limiting the max members to 100 so it wouldnt be a problem. this refresh to be done per 60s, define that as WORKSPACE_MEMBERS_AUTO_REFRESH_SECONDS.
+the 20s refresh to be done in active screen level, which updates the stale data. define the DASHBOARD_IDLE_REFRESH_SECONDS in components/dashboard/constants.ts .
+per page whatever entities are fetched using the proper access_control.py algorithm we discussed, store than in the zustand repository dont try to fetch everything at once. do the update based on each entityIds, have separate helper funcitons for each, keep things simple. all can be in provider file only.
+to keep things clean, put the handling of localStorage workspaceId logic in the provider too, make suitable endpoints as needed. use the api client made and add the urls properly.
+
+make sure the refresh counters doesnt reset on navigaiton. and for every operation like crud or moving a paper, all should be locally updated too, this to be done per page/component level using the provider's context, no need to define these in provider code.
+
+this refresh can fail in 2 beautiful ways: if the user's access to the resources is revoked, then he will be thrown to /dashboard screen, where the logic discussed in workspace_access_controll.txt will handle what to do with him, so handle the error codes carefully. and if unable to reach server, then show a toast saying "You are offline"
+
+on first laod, use a isLoading state to either show skeletons or not.
+
+use list_accessible_items from access_control.py per screen via separate dashboard API endpoints per screen. each screen (dashboard, project, collection) calls its own endpoint which uses list_accessible_items to fetch only what the user has access to for that context.

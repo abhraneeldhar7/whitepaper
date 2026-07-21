@@ -1,11 +1,12 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useDashboard } from "./dashboard-provider";
+import { useDashboardStore } from "./dashboard-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function OverviewTab() {
-  const { papers, projects } = useDashboard();
+  const papers = useDashboardStore((s) => s.papers);
+  const projects = useDashboardStore((s) => s.projects);
 
   return (
     <div className="p-4 space-y-6">
@@ -60,10 +61,10 @@ function PlaceholderTab({ name }: { name: string }) {
 
 export default function DashboardContent() {
   const searchParams = useSearchParams();
-  const { loading } = useDashboard();
+  const isLoading = useDashboardStore((s) => s.isLoading);
   const activeTab = searchParams.get("tab") || "overview";
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-4 space-y-4">
         <Skeleton className="h-8 w-48" />

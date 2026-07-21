@@ -4,7 +4,14 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.access_control import (
+    get_entity_members,
+    get_oldest_owned_workspace,
+    get_any_accessible_workspace,
+    has_workspace_access,
+)
 from app.shared.schema import (
+    Collection,
     EntityMembers,
     EntityType,
     MemberRole,
@@ -44,61 +51,6 @@ async def create_personal_workspace(
     return workspace
 
 
-async def _get_oldest_owned_workspace(
-    db: AsyncSession, userId: str
-) -> str | None:
-    """Return workspaceId of the oldest workspace where user is owner, or None."""
-    result = await db.execute(
-        select(EntityMembers.workspaceId).where(
-            EntityMembers.userId == userId,
-            EntityMembers.entityType == EntityType.workspace,
-            EntityMembers.role == MemberRole.owner,
-        ).order_by(EntityMembers.grantedAt.asc()).limit(1)
-    )
-    row = result.scalar_one_or_none()
-    return row
-
-
-async def _get_any_accessible_workspace(
-    db: AsyncSession, userId: str
-) -> str | None:
-    """Return workspaceId of any workspace the user has access to, or None."""
-    result = await db.execute(
-        select(EntityMembers.workspaceId).where(
-            EntityMembers.userId == userId,
-            EntityMembers.entityType == EntityType.workspace,
-        ).limit(1)
-    )
-    row = result.scalar_one_or_none()
-    return row
-
-
-async def _has_workspace_access(
-    db: AsyncSession, userId: str, workspaceId: str
-) -> bool:
-    result = await db.execute(
-        select(EntityMembers).where(
-            EntityMembers.userId == userId,
-            EntityMembers.workspaceId == workspaceId,
-            EntityMembers.entityType == EntityType.workspace,
-        )
-    )
-    return result.scalar_one_or_none() is not None
-
-
-async def _get_entity_members(
-    db: AsyncSession, userId: str, workspaceId: str
-) -> list[EntityMembers]:
-    """Get all entity_members rows for this user in this workspace."""
-    result = await db.execute(
-        select(EntityMembers).where(
-            EntityMembers.userId == userId,
-            EntityMembers.workspaceId == workspaceId,
-        )
-    )
-    return list(result.scalars().all())
-
-
 @dataclass
 class DashboardResult:
     workspace: Workspace
@@ -122,7 +74,7 @@ async def _load_workspace_data(
     - If entityType=paper or entityType=collection → resolve parent project,
       show those.
     """
-    members = await _get_entity_members(db, userId, workspaceId)
+    members = await get_entity_members(db, userId, workspaceId)
 
     has_workspace_access = any(
         m.entityType == EntityType.workspace for m in members
@@ -181,12 +133,12 @@ async def _load_workspace_data(
             target_paper_ids.add(m.entityId)
             paper_roles[m.entityId] = m.role
         elif m.entityType == EntityType.collection:
-            # Collection → find parent project via projectId on the collection,
-            # but we don't have collection table here, so check if any project
-            # member matches. For now, collections at dashboard level mean
-            # the parent project should be shown.
-            # We need to query the collection to get its projectId.
-            pass
+            coll_result = await db.execute(
+                select(Collection.projectId).where(Collection.collectionId == m.entityId)
+            )
+            parent_project_id = coll_result.scalar_one_or_none()
+            if parent_project_id:
+                target_project_ids.add(parent_project_id)
 
     # For papers, resolve parent projects
     if target_paper_ids:
@@ -245,12 +197,12 @@ async def resolve_dashboard(
 
     # --- Step 2: Check access ---
     if selected_id:
-        has_access = await _has_workspace_access(db, userId, selected_id)
+        has_access = await has_workspace_access(db, userId, selected_id)
         if not has_access:
             # Access blocked — fallback per spec
-            fallback_id = await _get_oldest_owned_workspace(db, userId)
+            fallback_id = await get_oldest_owned_workspace(db, userId)
             if not fallback_id:
-                fallback_id = await _get_any_accessible_workspace(db, userId)
+                fallback_id = await get_any_accessible_workspace(db, userId)
 
             if fallback_id:
                 return {
@@ -262,9 +214,9 @@ async def resolve_dashboard(
 
     # --- Step 3: If no workspaceId sent, find one ---
     if not selected_id:
-        selected_id = await _get_oldest_owned_workspace(db, userId)
+        selected_id = await get_oldest_owned_workspace(db, userId)
         if not selected_id:
-            selected_id = await _get_any_accessible_workspace(db, userId)
+            selected_id = await get_any_accessible_workspace(db, userId)
 
         if not selected_id:
             return {"error": "No workspaces available for this account"}
@@ -317,7 +269,7 @@ async def resolve_dashboard(
             }
             for pr in data.projects
         ],
-        "workspace_role": data.workspace_role.value if data.workspace_role else None,
-        "project_roles": {k: v.value for k, v in data.project_roles.items()},
-        "paper_roles": {k: v.value for k, v in data.paper_roles.items()},
+        "workspace_role": data.workspace_role,
+        "project_roles": dict(data.project_roles),
+        "paper_roles": dict(data.paper_roles),
     }

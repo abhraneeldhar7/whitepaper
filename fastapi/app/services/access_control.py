@@ -203,6 +203,63 @@ async def get_entity_members(
     return list(result.scalars().all())
 
 
+async def get_user_workspaces(
+    db: AsyncSession, userId: str
+) -> list[dict]:
+    result = await db.execute(
+        select(
+            EntityMembers.workspaceId,
+            EntityMembers.role,
+            Workspace.workspaceName,
+        )
+        .join(Workspace, EntityMembers.workspaceId == Workspace.workspaceId)
+        .where(
+            EntityMembers.userId == userId,
+            EntityMembers.entityType == EntityType.workspace,
+        )
+        .order_by(EntityMembers.grantedAt.asc())
+    )
+    return [
+        {"workspaceId": row[0], "role": row[1].value, "workspaceName": row[2]}
+        for row in result.all()
+    ]
+
+
+async def get_workspace_members(
+    db: AsyncSession, workspaceId: str
+) -> list[dict]:
+    from app.shared.schema import User
+
+    result = await db.execute(
+        select(
+            EntityMembers.userId,
+            EntityMembers.entityType,
+            EntityMembers.entityId,
+            EntityMembers.role,
+            EntityMembers.grantedAt,
+            User.name,
+            User.email,
+            User.avatarUrl,
+        )
+        .join(User, EntityMembers.userId == User.userId)
+        .where(EntityMembers.workspaceId == workspaceId)
+        .order_by(EntityMembers.grantedAt.asc())
+    )
+    return [
+        {
+            "userId": row[0],
+            "entityType": row[1].value,
+            "entityId": row[2],
+            "role": row[3].value,
+            "grantedAt": row[4].isoformat(),
+            "name": row[5],
+            "email": row[6],
+            "avatarUrl": row[7],
+        }
+        for row in result.all()
+    ]
+
+
 # ── Access grant / revoke ──
 
 

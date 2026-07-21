@@ -2,6 +2,7 @@ import random
 import string
 from typing import Any
 
+from clerk_backend_api import ClerkBaseError
 from app.shared.schema import MemberRole, EntityType
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +10,7 @@ from svix.webhooks import Webhook, WebhookVerificationError
 
 from app.core.config import settings
 from app.core.database import db
+from app.core.security import clerk_client
 from app.services.access_control import grant_access
 from app.services.user_service import (
     create_user,
@@ -54,6 +56,13 @@ async def handle_user_created(data: dict[str, Any], session: AsyncSession) -> No
     clerk_user_id = data.get("id")
     if not clerk_user_id:
         return
+
+    try:
+        await clerk_client.users.get_async(user_id=clerk_user_id)
+    except ClerkBaseError as e:
+        if e.status_code == 404:
+            return
+        raise
 
     existing = await get_user_by_id(session, clerk_user_id)
     if existing:

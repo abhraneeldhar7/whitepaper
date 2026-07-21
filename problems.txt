@@ -1,4 +1,4 @@
-dashboard tabs: overview, members, plan, settings, inbox, how to use.																																																				
+																																																		
 
 grid/list toggle.
 projects first then papers.
