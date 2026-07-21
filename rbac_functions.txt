@@ -1,0 +1,136 @@
+rolesList means ClerkUserRole array from get_verified_request return.
+
+
+1. get_verified_request:
+already exists in fastapi\app\core\security.py
+
+
+2. resolve_role_for_entity(rolesList, entity, entityType):
+    - here the user's most specific role to the entity is to be returned for further checking using can() funciton, if user isnt allowed then return null.
+    - if entity is public then worst case, viewer role is to be returned.
+    - check for direct hit first, check if entity.entityId exists in rolesList.
+    - if not, then move up the parent chain lowest to highest (collectionId then projectId then workspaceId based on entity type) to find the most specific role.
+    if entityType == "workspace":
+        chain = [entity.workspaceId]
+    else if entityType == "project":
+        chain = [entity.projectId, entity.workspaceId]
+    else if entityType == "collection":
+        chain = [entity.collectionId, entity.projectId, entity.workspaceId]
+    else if entityType == "paper":
+        chain = [entity.paperId, entity.collectionId, entity.projectId, entity.workspaceId]
+    else:
+        return null  // Unknown type
+
+
+
+3. can(role, entity_type, action)
+No DB call. Static lookup table defined in app/shared/permissions.py
+Roles are entity-specific (e.g. "editor" exists on project/collection/paper but NOT on workspace).
+Actions: view, edit, delete, add_members, remove_members
+
+
+4. check_access(rolesList, entity, action)
+    - use resolve_role and can funcitons to check if user has access to the given entity.
+    - return (allowed true or false, role)
+
+
+5. list_accessible_items(db, rolesList, context_type, context_id, target_type):
+- the screens follow the entity hierarchy. each screen shows items below it:
+    workspace page  -> projects, root-level papers
+    project page    -> collections, project-root papers
+    collection page -> papers
+
+- uses a two-phase approach: top-down (access check on the screen itself) is a separate concern done by check_access().
+  list_accessible_items ONLY handles bottom-up listing of items within that screen.
+
+TOP-DOWN (separate, done by check_access() in function 4):
+- checks if user can access the current container (workspace, project, or collection).
+- checks if container entityId exists in user's claims, or if any of its parent entityIds do.
+- this is NOT part of list_accessible_items - it's the guard that runs before the listing.
+
+BOTTOM-UP (what list_accessible_items does):
+- look at user's claims and find items that belong to the current context.
+- works in two phases:
+
+    Phase A - Direct matches:
+        filter user's claims by entityType == target_type.
+        query DB to check which of those belong in the current context
+        (parentId matches context_id + extra conditions like projectId IS NULL for
+        root-level papers, since paper can sit at workspace/project/collection level).
+        each matched item keeps its actual role from the claim.
+
+    Phase B - Derived matches (the rollup):
+        some users have claims on DEEPER entities (e.g. a paper inside a collection)
+        but no claim on the target_type itself (e.g. the collection that contains it).
+        in that case, find descendant entities that belong to the current context,
+        extract their parent (which matches target_type), and show that parent as
+        "viewer" role.
+        this handles the case: "user can edit a paper in a collection, so they should
+        see that collection on the project page even without a direct collection role."
+
+    Merge:
+        if an entity appears in both direct and derived, direct role wins.
+        entities from derived matches always get role = "viewer".
+
+DIRECT MATCH RULES - how to check if a target entity belongs in the current context:
+
+    context_type | target_type | filter_field               | extra_conditions
+    -------------+-------------+----------------------------+-------------------------------
+    workspace    | project     | project.workspaceId        | none
+    workspace    | paper       | paper.workspaceId          | projectId IS NULL, collectionId IS NULL
+    project      | collection  | collection.projectId       | none
+    project      | paper       | paper.projectId            | collectionId IS NULL
+    collection   | paper       | paper.collectionId         | none
+
+    note: paper has nullable projectId/collectionId because it can exist at
+    any level independently. the extra_conditions ensure we only get papers
+    at the correct level for the current screen.
+
+DERIVED ROLLUP RULES - for each target_type, which descendant claims can roll up to it,
+and how to check if the descendant's parent belongs in the current context.
+
+    target_type | descendant | rollup_field     | context_check (parent must live in current context)
+    ------------+------------+------------------+----------------------------------------------------------------
+    project     | collection | coll.projectId   | coll.projectId IN (SELECT id FROM projects WHERE workspaceId = ctx_id)
+    project     | paper      | paper.projectId  | paper.projectId IS NOT NULL AND paper.projectId IN (SELECT id FROM projects WHERE workspaceId = ctx_id)
+    collection  | paper      | paper.collectionId | paper.collectionId IS NOT NULL AND paper.collectionId IN (SELECT id FROM collections WHERE projectId = ctx_id)
+
+ALGORITHM:
+
+    list_accessible_items(db, rolesList, context_type, context_id, target_type):
+
+        1.  // Phase A: Direct matches
+            claim_ids = [r.entityId for r in rolesList if r.entityType == target_type]
+            look up (model, filter_field, *extra) from DIRECT RULES using (context_type, target_type)
+            rows = db.query(model).where(
+                filter_field == context_id,
+                model.id.in_(claim_ids),
+                *extra
+            ).all()
+
+            result = {}    // entityId -> role
+            for row in rows:
+                result[row.id] = get_role_from_claims(rolesList, row.id, target_type)
+
+        2.  // Phase B: Derived matches (bottom-up rollup)
+            for each (desc_type, rollup_field, context_check) in DERIVED RULES for target_type:
+                desc_ids = [r.entityId for r in rolesList if r.entityType == desc_type]
+                if desc_ids is empty: continue
+
+                // find descendant entities that live in the current context,
+                // then extract their parent (which is of target_type)
+                parent_ids = db.query(distinct(rollup_field)).where(
+                    rollup_field.isnot(None),              // descendant must actually have a parent
+                    desc_type.id.in_(desc_ids),            // user has claim on this descendant
+                    context_check(context_id)              // parent lives in current context
+                ).all()
+
+                for parent_id in parent_ids:
+                    if parent_id not in result:
+                        result[parent_id] = "viewer"       // derived = viewer only
+
+        3.  return result as list of (entityId, role) pairs
+
+FUTURE EXTENSIBILITY:
+    adding new entity types (e.g. "folder") is just adding rows to the DIRECT and DERIVED
+    tables. the algorithm never changes.

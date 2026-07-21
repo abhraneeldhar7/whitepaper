@@ -26,6 +26,7 @@ class User(SQLModel, table=True):
 class ClerkUserRole(SQLModel):
     role: str
     entityId: str
+    entityType: str
 
 
 # ── Workspace ──
@@ -102,7 +103,7 @@ class EntityType(StrEnum):
 class MemberRole(StrEnum):
     owner = "owner"
     admin = "admin"
-    editor = "editor"
+    member = "member"
     viewer = "viewer"
 
 

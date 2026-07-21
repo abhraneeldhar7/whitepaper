@@ -1,0 +1,1 @@
+Shared folder means both fastapi and nextjs should have these things in sync

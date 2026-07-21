@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.schema import User
+from app.shared.schema import User
 from app.utils.helpers import now
 
 

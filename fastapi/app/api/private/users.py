@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import db
 from app.core.security import get_verified_request, VerifiedRequest
-from app.schemas.schema import User
+from app.shared.schema import User
 from app.services.user_service import get_user_by_id
 
 router = APIRouter(prefix="/users")

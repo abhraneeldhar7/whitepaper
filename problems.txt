@@ -1,0 +1,13 @@
+dashboard tabs: overview, members, plan, settings, inbox, how to use.																																																				
+
+grid/list toggle.
+projects first then papers.
+right click functionality, use dropdown not popover.
+search
+ctrl+k
+
+
+
+
+clerk access grant webhook infinite loop problem
+

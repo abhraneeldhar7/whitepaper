@@ -2,7 +2,7 @@ import random
 import string
 from typing import Any
 
-from app.schemas.schema import MemberRole, EntityType
+from app.shared.schema import MemberRole, EntityType
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from svix.webhooks import Webhook, WebhookVerificationError

@@ -4,5 +4,5 @@
 - Don't overengineer. Simple plain stuff is fine.
 - Don't create extra helper functions nobody asked for.
 - Don't restructure code patterns that already work. Stick to the existing pattern.
-- When the I say "fix X", fix X — not X, Y, Z, and refactor the whole thing.
+- When the I say "fix X", only fix X — not X, Y, Z, and refactor the whole thing.
 - Don't future proof stuff if not asked to.

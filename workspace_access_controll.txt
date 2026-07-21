@@ -1,0 +1,46 @@
+when in /dashboard without workspaceId specified in query params.
+
+1. selection of workspaceId:
+- Check if user has a "lastVisitedWorkspaceId" stored in Local storage. 
+- If no last visited workspace → Query entity_members table where userId = currentUser, role = "owner" (oldest joined), entityType=workspace, only select the oldest entry. that workspaceId is selected.
+
+when  in /dashboard screen and workspaceId is specified in queryParams.
+- that workspaceId is the selected workspaceId no questions asked.
+
+
+---
+
+
+2. Checking access to selected workspaceId:
+- Check entity_members for userId and workspaceId.
+- if the workspaceId is provided from lastVisited and access is blocked → Query entity_members table where userId = currentUser, role = "owner" (oldest joined), entityType=workspace, only select the oldest entry. that workspaceId is selected. then user should be redirected to /dashboard?workspace=selected-workspace-id (means the original first workspace made during account creation).
+
+2nd worst case: If that's also not available, just return any matching workspaceId from entity_members which user has any access to.
+Worst case: Return error saying no workspace available for this account.
+
+- if the workspaceId is not provided from lastVisited, and access is blocked then:
+2nd worst case: If that's also not available, just return any matching workspaceId from entity_members which user has any access to.
+Worst case: Return error saying no workspace available for this account.
+
+Basic flow:
+- Check entity_members for access
+- If blocked:
+   a. Check if user has ANY workspace at all
+   b. If yes → Redirect to default workspace with a toast message ("You don't have access to this workspace. Redirecting to your default workspace..." then redirect after 2 seconds.)
+   c. If no → Show "No workspaces available" page
+
+---
+
+3. Loading data:
+- Here a selected workspaceId is available.
+- Selected all the entries from entity_members where workspaceId and userId matches for current user.
+- Start from topdown, if there is an entry of entityType=workspace, then the user has read perms to the whole workspace (all roles allowed). At /dashboard level only root level papers and projects are needed. 
+So to fetch the papers, query papers table where workspaceId is matching and projectId and collectionId are set to null. (only papers table entries and no pagination for now)
+For the projects, select queries from projects table with matching workspaceId.
+Not Further checks for other entity_members entries are needed.
+
+- Then if the entity type is project, then fetch that project and show. If it's a child entity like paper or colleciton, the parent entity in order should be fetched. In dashboard screen, collections and nested papers are not needed but their parent entities should be fetched and shown.
+How to get parent entity: check the projectId (most likely to exist so check first), then fetch the project.
+
+---
+

@@ -11,7 +11,7 @@ updatedAt:datetime
 ---
 
 user custom claims set by clerk:
-roles:{role:str, entityId:str}[]
+roles:{role:str, entityId:str, entityType:str}[]
 
 // this is not a table, its the object structure of public metadata
 

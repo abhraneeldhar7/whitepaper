@@ -1,0 +1,19 @@
+editor sidebar:
+new chat
+recent files (track using localstorage)
+folder structure (load viewing levels only)
+inbox items.
+footer-> account profile.
+
+
+editor top navbar:
+paper title, edited X min ago, share, dropdown
+
+
+editor dropdown options:
+export
+copy paper contents
+duplicate
+move paper
+delete
+word count, char count.
