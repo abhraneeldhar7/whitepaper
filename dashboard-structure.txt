@@ -1,0 +1,6 @@
+lets restructure it like this.
+
+let ribbon be handled on its own in the DashboardRoot and its data feeding and functionality like switching workspace or getting sibling entities be powered by dashboardprovider. example to get siblings of a project, git the rootScreen function, etc.
+
+for the things below, let each page.tsx like have their own rows of tab options fed to the tabs and rename it to DashboardTabs, normal english names of tabs to be fed in and they will be normalized while making queryparams (all lowercase, space to underscore), and maybe wrap the main thing with DashboardContent but do something like this to make it more logical. example, wrap the main things like OverviewTab (or which one should be visible) in the <DashboardContent> and the dashboard content will prop drill something to facilitate the current tab. im telling to wrap this to have the uniform UI design for all tabs and a swipe+fade animation on tab switch in future IN FUTURE NOT NOW.
+for loading state, each tabcontent file example OverviewTab to itself inside itself will decide if to show the content or skeleton screen if the data is being loaded, dont pollute main dashboard pages or components.

@@ -37,6 +37,7 @@ interface DashboardState {
   collections: CollectionWithRole[];
   members: MemberWithUser[];
   lastMembersFetch: number;
+  hydrated: boolean;
 
   upsertToProjects: (projects: ProjectWithRole[]) => void;
   upsertToCollections: (collections: CollectionWithRole[]) => void;
@@ -62,6 +63,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   collections: [],
   members: [],
   lastMembersFetch: 0,
+  hydrated: false,
 
   upsertToProjects: (incoming) =>
     set((s) => {

@@ -27,15 +27,28 @@ import {
 } from "@/lib/api/services/dashboard";
 import { resolveDashboard } from "@/lib/api/services/workspace";
 import type { Workspace } from "@/lib/types";
+import type {
+  ProjectWithRole,
+  CollectionWithRole,
+  PaperWithRole,
+} from "@/lib/api/services/dashboard";
 import { useDashboardStore } from "@/lib/zustand/store";
 
 export { useDashboardStore };
 
 interface DashboardContextType {
   setWorkspaceId: (id: string) => void;
-  rootScreen: () => Promise<void>;
-  projectScreen: (projectId: string) => Promise<void>;
-  collectionScreen: (collectionId: string) => Promise<void>;
+  rootScreen: () => Promise<{
+    projects: ProjectWithRole[];
+    papers: PaperWithRole[];
+  } | null>;
+  projectScreen: (
+    projectId: string
+  ) => Promise<{
+    collections: CollectionWithRole[];
+    papers: PaperWithRole[];
+  } | null>;
+  collectionScreen: (collectionId: string) => Promise<PaperWithRole[] | null>;
   loadMembers: () => Promise<void>;
   loadAccessibleWorkspaces: () => Promise<void>;
 }
@@ -112,44 +125,83 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         handleError(e);
         return null;
+      } finally {
+        useDashboardStore.setState({ hydrated: true });
       }
     },
     [getTokenOrThrow, router, handleError]
   );
 
-  // ─── Screen loading ───
+  // ─── Screen resolvers ───
 
   const rootScreen = useCallback(async () => {
     const sc = useDashboardStore.getState().workspaceScreenContent;
-    if (!sc) return;
+    if (!sc) return null;
 
     const stale =
       Date.now() - sc.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
-    if (sc.lastFetched > 0 && !stale) return;
 
-    const token = await getTokenOrThrow();
-    const workspaceId = sc.workspaceId;
-
-    try {
-      const [projects, papers] = await Promise.all([
-        fetchDashboardProjects(token, workspaceId),
-        fetchDashboardPapers(token, workspaceId),
-      ]);
-
-      useDashboardStore.getState().upsertToProjects(projects);
-      useDashboardStore.getState().upsertToPapers(papers);
-
-      useDashboardStore.setState({
-        workspaceScreenContent: {
-          ...useDashboardStore.getState().workspaceScreenContent!,
-          lastFetched: Date.now(),
-          paperIdArray: papers.map((p) => p.paperId),
-          projectIdArray: projects.map((p) => p.projectId),
-        },
-      });
-    } catch (e) {
-      handleError(e);
+    // Await fetch if first load
+    if (sc.lastFetched === 0) {
+      const token = await getTokenOrThrow();
+      try {
+        const [projects, papers] = await Promise.all([
+          fetchDashboardProjects(token, sc.workspaceId),
+          fetchDashboardPapers(token, sc.workspaceId),
+        ]);
+        useDashboardStore.getState().upsertToProjects(projects);
+        useDashboardStore.getState().upsertToPapers(papers);
+        useDashboardStore.setState({
+          workspaceScreenContent: {
+            ...useDashboardStore.getState().workspaceScreenContent!,
+            lastFetched: Date.now(),
+            paperIdArray: papers.map((p) => p.paperId),
+            projectIdArray: projects.map((p) => p.projectId),
+          },
+        });
+        return { projects, papers };
+      } catch (e) {
+        handleError(e);
+        return null;
+      }
     }
+
+    // Stale – fire refresh in background, return stale data
+    if (stale) {
+      try {
+        const token = await getTokenOrThrow();
+        Promise.all([
+          fetchDashboardProjects(token, sc.workspaceId),
+          fetchDashboardPapers(token, sc.workspaceId),
+        ])
+          .then(([projects, papers]) => {
+            useDashboardStore.getState().upsertToProjects(projects);
+            useDashboardStore.getState().upsertToPapers(papers);
+            useDashboardStore.setState({
+              workspaceScreenContent: {
+                ...useDashboardStore.getState().workspaceScreenContent!,
+                lastFetched: Date.now(),
+                paperIdArray: papers.map((p) => p.paperId),
+                projectIdArray: projects.map((p) => p.projectId),
+              },
+            });
+          })
+          .catch(handleError);
+      } catch (e) {
+        handleError(e);
+      }
+    }
+
+    // Return data from store
+    const state = useDashboardStore.getState();
+    return {
+      projects: state.projects.filter((p) =>
+        sc.projectIdArray.includes(p.projectId)
+      ),
+      papers: state.papers.filter((p) =>
+        sc.paperIdArray.includes(p.paperId)
+      ),
+    };
   }, [getTokenOrThrow, handleError]);
 
   const projectScreen = useCallback(
@@ -157,29 +209,75 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const psc = useDashboardStore
         .getState()
         .projectScreenMap.find((x) => x.projectId === projectId);
+      if (!psc) return null;
 
       const stale =
-        psc &&
         Date.now() - psc.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
-      if (psc && psc.lastFetched > 0 && !stale) return;
 
-      const wsId =
-        useDashboardStore.getState().workspaceScreenContent?.workspaceId;
-      if (!wsId) return;
-
-      const token = await getTokenOrThrow();
-
-      try {
-        const [collections, papers] = await Promise.all([
-          fetchProjectCollections(token, projectId, wsId),
-          fetchProjectPapers(token, projectId, wsId),
-        ]);
-
-        useDashboardStore.getState().upsertToCollections(collections);
-        useDashboardStore.getState().upsertToPapers(papers);
-      } catch (e) {
-        handleError(e);
+      // Await fetch if first load
+      if (psc.lastFetched === 0) {
+        const wsId =
+          useDashboardStore.getState().workspaceScreenContent?.workspaceId;
+        if (!wsId) return null;
+        const token = await getTokenOrThrow();
+        try {
+          const [collections, papers] = await Promise.all([
+            fetchProjectCollections(token, projectId, wsId),
+            fetchProjectPapers(token, projectId, wsId),
+          ]);
+          useDashboardStore.getState().upsertToCollections(collections);
+          useDashboardStore.getState().upsertToPapers(papers);
+          useDashboardStore.setState((s) => ({
+            projectScreenMap: s.projectScreenMap.map((x) =>
+              x.projectId === projectId ? { ...x, lastFetched: Date.now() } : x
+            ),
+          }));
+          return { collections, papers };
+        } catch (e) {
+          handleError(e);
+          return null;
+        }
       }
+
+      // Stale – fire refresh in background, return stale data
+      if (stale) {
+        try {
+          const wsId =
+            useDashboardStore.getState().workspaceScreenContent?.workspaceId;
+          if (wsId) {
+            const token = await getTokenOrThrow();
+            Promise.all([
+              fetchProjectCollections(token, projectId, wsId),
+              fetchProjectPapers(token, projectId, wsId),
+            ])
+              .then(([collections, papers]) => {
+                useDashboardStore.getState().upsertToCollections(collections);
+                useDashboardStore.getState().upsertToPapers(papers);
+                useDashboardStore.setState((s) => ({
+                  projectScreenMap: s.projectScreenMap.map((x) =>
+                    x.projectId === projectId
+                      ? { ...x, lastFetched: Date.now() }
+                      : x
+                  ),
+                }));
+              })
+              .catch(handleError);
+          }
+        } catch (e) {
+          handleError(e);
+        }
+      }
+
+      // Return data from store
+      const state = useDashboardStore.getState();
+      return {
+        collections: state.collections.filter((c) =>
+          psc.collectionIdArray.includes(c.collectionId)
+        ),
+        papers: state.papers.filter((p) =>
+          psc.paperIdArray.includes(p.paperId)
+        ),
+      };
     },
     [getTokenOrThrow, handleError]
   );
@@ -189,24 +287,67 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const csc = useDashboardStore
         .getState()
         .collectionScreenMap.find((x) => x.collectionId === collectionId);
+      if (!csc) return null;
 
       const stale =
-        csc &&
         Date.now() - csc.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
-      if (csc && csc.lastFetched > 0 && !stale) return;
 
-      const wsId =
-        useDashboardStore.getState().workspaceScreenContent?.workspaceId;
-      if (!wsId) return;
-
-      const token = await getTokenOrThrow();
-
-      try {
-        const papers = await fetchCollectionPapers(token, collectionId, wsId);
-        useDashboardStore.getState().upsertToPapers(papers);
-      } catch (e) {
-        handleError(e);
+      // Await fetch if first load
+      if (csc.lastFetched === 0) {
+        const wsId =
+          useDashboardStore.getState().workspaceScreenContent?.workspaceId;
+        if (!wsId) return null;
+        const token = await getTokenOrThrow();
+        try {
+          const papers = await fetchCollectionPapers(
+            token,
+            collectionId,
+            wsId
+          );
+          useDashboardStore.getState().upsertToPapers(papers);
+          useDashboardStore.setState((s) => ({
+            collectionScreenMap: s.collectionScreenMap.map((x) =>
+              x.collectionId === collectionId
+                ? { ...x, lastFetched: Date.now() }
+                : x
+            ),
+          }));
+          return papers;
+        } catch (e) {
+          handleError(e);
+          return null;
+        }
       }
+
+      // Stale – fire refresh in background, return stale data
+      if (stale) {
+        try {
+          const wsId =
+            useDashboardStore.getState().workspaceScreenContent?.workspaceId;
+          if (wsId) {
+            const token = await getTokenOrThrow();
+            fetchCollectionPapers(token, collectionId, wsId)
+              .then((papers) => {
+                useDashboardStore.getState().upsertToPapers(papers);
+                useDashboardStore.setState((s) => ({
+                  collectionScreenMap: s.collectionScreenMap.map((x) =>
+                    x.collectionId === collectionId
+                      ? { ...x, lastFetched: Date.now() }
+                      : x
+                  ),
+                }));
+              })
+              .catch(handleError);
+          }
+        } catch (e) {
+          handleError(e);
+        }
+      }
+
+      // Return data from store
+      return useDashboardStore
+        .getState()
+        .papers.filter((p) => csc.paperIdArray.includes(p.paperId));
     },
     [getTokenOrThrow, handleError]
   );
@@ -321,11 +462,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const lastVisited = localStorage.getItem(LAST_VISITED_KEY);
     const initialId = paramId || lastVisited || undefined;
 
-    resolveWorkspace(initialId).then((resolved) => {
-      if (resolved) {
-        loadAccessibleWorkspaces();
-        rootScreen();
-      }
+    resolveWorkspace(initialId).then(() => {
+      rootScreen();
+      loadAccessibleWorkspaces();
     });
   }, [searchParams, resolveWorkspace, loadAccessibleWorkspaces, rootScreen]);
 

@@ -1,35 +1,22 @@
 "use client"
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { useDashboardStore } from "@/lib/zustand/store";
-import TabsGroup from "@/components/dashboard/tabs-group";
-import OverviewTab from "@/components/dashboard/tabs/overview-tab";
-import MembersTab from "@/components/dashboard/tabs/members-tab";
-import PlaceholderTab from "@/components/dashboard/placeholder-tab";
+import type { ReactNode } from "react";
+import DashboardTabs from "./dashboard-tabs";
 
-const DASHBOARD_TABS = ["Overview", "Members", "Plan", "Settings", "How to Use"] as const;
+interface DashboardContentProps {
+  tabs: string[];
+  currentTab: string;
+  onTabChange: (tab: string) => void;
+  children: ReactNode;
+}
 
-export default function DashboardContent() {
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
-  const projects = useDashboardStore((s) => s.projects);
-  const papers = useDashboardStore((s) => s.papers);
-
-  useEffect(() => {
-    setActiveTab(searchParams.get("tab") || "overview");
-  }, [searchParams]);
-
+export default function DashboardContent({ tabs, currentTab, onTabChange, children }: DashboardContentProps) {
   return (
     <div className="p-1 md:p-2 pt-0 md:pt-0 w-full h-full flex-1 flex flex-col">
       <div className="border rounded-md bg-background w-full h-full flex-1 flex flex-col">
-        <TabsGroup tabs={DASHBOARD_TABS} />
+      <DashboardTabs tabs={tabs} activeTab={currentTab} onTabChange={onTabChange} />
         <div className="flex-1 overflow-auto">
-          {activeTab === "overview" && <OverviewTab projects={projects} papers={papers} />}
-          {activeTab === "members" && <MembersTab />}
-          {activeTab === "plan" && <PlaceholderTab name="Plan" />}
-          {activeTab === "settings" && <PlaceholderTab name="Settings" />}
-          {activeTab === "how to use" && <PlaceholderTab name="How to Use" />}
+          {children}
         </div>
       </div>
     </div>

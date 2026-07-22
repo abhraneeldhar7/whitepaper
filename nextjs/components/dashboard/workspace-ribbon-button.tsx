@@ -11,23 +11,23 @@ import {
 } from "@/components/ui/popover";
 
 export default function WorkspaceRibbonButton() {
-  const workspace = useDashboardStore((s) => s.workspace);
-  const accessibleWorkspaces = useDashboardStore((s) => s.accessibleWorkspaces);
+  const activeWorkspace = useDashboardStore((s) => s.activeWorkspace);
+  const availableWorkspaces = useDashboardStore((s) => s.availableWorkspaces);
   const { setWorkspaceId } = useDashboard();
 
-  if (!workspace) return null;
+  if (!activeWorkspace) return null;
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" className="gap-2 px-2 h-auto py-1.5">
-          <WorkspaceLogo src={null} name={workspace.workspaceName} />
-          <span className="text-base font-medium">{workspace.workspaceName}</span>
+          <WorkspaceLogo src={null} name={activeWorkspace.workspaceName} />
+          <span className="text-base font-medium">{activeWorkspace.workspaceName}</span>
           <ChevronsUpDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-1">
-        {accessibleWorkspaces.map((ws) => (
+        {availableWorkspaces.map((ws) => (
           <button
             key={ws.workspaceId}
             onClick={() => setWorkspaceId(ws.workspaceId)}
@@ -35,12 +35,12 @@ export default function WorkspaceRibbonButton() {
           >
             <WorkspaceLogo src={null} name={ws.workspaceName} size={24} />
             <span className="flex-1 text-sm truncate">{ws.workspaceName}</span>
-            {ws.workspaceId === workspace.workspaceId && (
+            {ws.workspaceId === activeWorkspace.workspaceId && (
               <Check className="h-4 w-4 shrink-0" />
             )}
           </button>
         ))}
-        {accessibleWorkspaces.length === 0 && (
+        {availableWorkspaces.length === 0 && (
           <p className="text-xs text-muted-foreground px-2 py-1.5">No other workspaces</p>
         )}
       </PopoverContent>

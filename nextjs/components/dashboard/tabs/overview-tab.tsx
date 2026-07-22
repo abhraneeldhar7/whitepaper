@@ -1,8 +1,14 @@
-import { useDashboardStore } from "@/lib/zustand/store";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProjectWithRole, CollectionWithRole, PaperWithRole } from "@/lib/api/services/dashboard";
 
-function OverviewTabLoading() {
+interface OverviewTabProps {
+  loading?: boolean;
+  projects?: ProjectWithRole[];
+  collections?: CollectionWithRole[];
+  papers?: PaperWithRole[];
+}
+
+function OverviewTabSkeleton() {
   return (
     <div className="p-4 space-y-4">
       <Skeleton className="h-8 w-48" />
@@ -12,16 +18,8 @@ function OverviewTabLoading() {
   );
 }
 
-interface OverviewTabProps {
-  projects?: ProjectWithRole[];
-  collections?: CollectionWithRole[];
-  papers?: PaperWithRole[];
-}
-
-export default function OverviewTab({ projects = [], collections = [], papers = [] }: OverviewTabProps) {
-  const isLoading = useDashboardStore((s) => s.isLoading);
-
-  if (isLoading) return <OverviewTabLoading />;
+export default function OverviewTab({ loading = false, projects = [], collections = [], papers = [] }: OverviewTabProps) {
+  if (loading) return <OverviewTabSkeleton />;
 
   return (
     <div className="p-4 space-y-6">
