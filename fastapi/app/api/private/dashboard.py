@@ -6,6 +6,7 @@ from app.core.database import db
 from app.core.security import get_verified_request, VerifiedRequest
 from app.services.access_control import (
     get_workspace_members,
+    get_user_all_workspaces,
     list_accessible_items,
 )
 from app.shared.schema import (
@@ -141,3 +142,11 @@ async def workspace_members(
     auth: VerifiedRequest = Depends(get_verified_request),
 ) -> list[dict]:
     return await get_workspace_members(session, workspaceId)
+
+
+@router.get("/workspaces")
+async def user_workspaces(
+    session: AsyncSession = Depends(db.get_db),
+    auth: VerifiedRequest = Depends(get_verified_request),
+) -> list[dict]:
+    return await get_user_all_workspaces(session, auth.userId)

@@ -1,6 +1,6 @@
 import { api } from "@/lib/api/api-client";
 import { PRIVATE } from "@/lib/api/endpoints";
-import type { Project, Collection, Paper, EntityMembers } from "@/lib/types";
+import type { Project, Collection, Paper, MemberWithUser } from "@/lib/types";
 
 export interface ProjectWithRole extends Project {
   role: string;
@@ -12,12 +12,6 @@ export interface CollectionWithRole extends Collection {
 
 export interface PaperWithRole extends Paper {
   role: string;
-}
-
-export interface MemberWithInfo extends EntityMembers {
-  name: string;
-  email: string;
-  avatarUrl: string | null;
 }
 
 export function fetchDashboardProjects(
@@ -76,9 +70,24 @@ export function fetchCollectionPapers(
 export function fetchWorkspaceMembers(
   token: string,
   workspaceId: string
-): Promise<MemberWithInfo[]> {
-  return api.get<MemberWithInfo[]>(
+): Promise<MemberWithUser[]> {
+  return api.get<MemberWithUser[]>(
     `${PRIVATE.DASHBOARD_MEMBERS}?workspaceId=${workspaceId}`,
+    { token }
+  );
+}
+
+export interface AccessibleWorkspace {
+  workspaceId: string;
+  workspaceName: string;
+  workspaceSlug: string | null;
+}
+
+export function fetchAccessibleWorkspaces(
+  token: string
+): Promise<AccessibleWorkspace[]> {
+  return api.get<AccessibleWorkspace[]>(
+    PRIVATE.DASHBOARD_WORKSPACES,
     { token }
   );
 }

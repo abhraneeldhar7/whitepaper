@@ -5,6 +5,7 @@ export const PRIVATE = {
   DASHBOARD_PROJECTS: "/private/dashboard/projects",
   DASHBOARD_PAPERS: "/private/dashboard/papers",
   DASHBOARD_MEMBERS: "/private/dashboard/members",
+  DASHBOARD_WORKSPACES: "/private/dashboard/workspaces",
   PROJECT_COLLECTIONS: "/private/dashboard/projects",
   PROJECT_PAPERS: "/private/dashboard/projects",
   COLLECTION_PAPERS: "/private/dashboard/collections",

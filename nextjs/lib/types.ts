@@ -124,3 +124,10 @@ export interface PaperContent {
   paperId: string;
   content: string;
 }
+
+// ── Member with User ──
+
+export interface MemberWithUser {
+  user: User;
+  membership: EntityMembers;
+}

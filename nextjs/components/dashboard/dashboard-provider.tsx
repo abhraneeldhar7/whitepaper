@@ -6,18 +6,16 @@ import {
   useContext,
   useEffect,
   useRef,
-  useState,
   type ReactNode,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { create } from "zustand";
 import {
   DASHBOARD_IDLE_REFRESH_SECONDS,
   WORKSPACE_MEMBERS_AUTO_REFRESH_SECONDS,
   LAST_VISITED_KEY,
-} from "./constants";
+} from "@/lib/constants";
 import {
   fetchDashboardProjects,
   fetchDashboardPapers,
@@ -25,119 +23,12 @@ import {
   fetchProjectPapers,
   fetchCollectionPapers,
   fetchWorkspaceMembers,
-  type ProjectWithRole,
-  type CollectionWithRole,
-  type PaperWithRole,
-  type MemberWithInfo,
+  fetchAccessibleWorkspaces,
 } from "@/lib/api/services/dashboard";
-import { resolveDashboard, type DashboardResponse } from "@/lib/api/services/workspace";
+import { resolveDashboard } from "@/lib/api/services/workspace";
+import { useDashboardStore } from "@/lib/zustand/store";
 
-interface DashboardState {
-  workspaceId: string | null;
-  workspace: DashboardResponse["workspace"] | null;
-  projects: ProjectWithRole[];
-  papers: PaperWithRole[];
-  collections: CollectionWithRole[];
-  members: MemberWithInfo[];
-  isLoading: boolean;
-  error: string | null;
-
-  lastEntitiesFetch: number;
-  lastMembersFetch: number;
-
-  setWorkspaceId: (id: string) => void;
-  setWorkspace: (w: DashboardResponse["workspace"]) => void;
-  setProjects: (p: ProjectWithRole[]) => void;
-  setPapers: (p: PaperWithRole[]) => void;
-  setCollections: (c: CollectionWithRole[]) => void;
-  setMembers: (m: MemberWithInfo[]) => void;
-  setIsLoading: (v: boolean) => void;
-  setError: (e: string | null) => void;
-  updateProject: (projectId: string, data: Partial<ProjectWithRole>) => void;
-  removeProject: (projectId: string) => void;
-  addProject: (p: ProjectWithRole) => void;
-  updatePaper: (paperId: string, data: Partial<PaperWithRole>) => void;
-  removePaper: (paperId: string) => void;
-  addPaper: (p: PaperWithRole) => void;
-  updateCollection: (collectionId: string, data: Partial<CollectionWithRole>) => void;
-  removeCollection: (collectionId: string) => void;
-  addCollection: (c: CollectionWithRole) => void;
-
-  isEntitiesStale: () => boolean;
-  isMembersStale: () => boolean;
-  markEntitiesFresh: () => void;
-  markMembersFresh: () => void;
-}
-
-export const useDashboardStore = create<DashboardState>((set, get) => ({
-  workspaceId: null,
-  workspace: null,
-  projects: [],
-  papers: [],
-  collections: [],
-  members: [],
-  isLoading: true,
-  error: null,
-
-  lastEntitiesFetch: 0,
-  lastMembersFetch: 0,
-
-  setWorkspaceId: (id) => set({ workspaceId: id }),
-  setWorkspace: (w) => set({ workspace: w }),
-  setProjects: (p) => set({ projects: p }),
-  setPapers: (p) => set({ papers: p }),
-  setCollections: (c) => set({ collections: c }),
-  setMembers: (m) => set({ members: m }),
-  setIsLoading: (v) => set({ isLoading: v }),
-  setError: (e) => set({ error: e }),
-
-  updateProject: (projectId, data) =>
-    set((s) => ({
-      projects: s.projects.map((p) =>
-        p.projectId === projectId ? { ...p, ...data } : p
-      ),
-    })),
-  removeProject: (projectId) =>
-    set((s) => ({
-      projects: s.projects.filter((p) => p.projectId !== projectId),
-    })),
-  addProject: (p) => set((s) => ({ projects: [...s.projects, p] })),
-
-  updatePaper: (paperId, data) =>
-    set((s) => ({
-      papers: s.papers.map((p) =>
-        p.paperId === paperId ? { ...p, ...data } : p
-      ),
-    })),
-  removePaper: (paperId) =>
-    set((s) => ({
-      papers: s.papers.filter((p) => p.paperId !== paperId),
-    })),
-  addPaper: (p) => set((s) => ({ papers: [...s.papers, p] })),
-
-  updateCollection: (collectionId, data) =>
-    set((s) => ({
-      collections: s.collections.map((c) =>
-        c.collectionId === collectionId ? { ...c, ...data } : c
-      ),
-    })),
-  removeCollection: (collectionId) =>
-    set((s) => ({
-      collections: s.collections.filter((c) => c.collectionId !== collectionId),
-    })),
-  addCollection: (c) => set((s) => ({ collections: [...s.collections, c] })),
-
-  isEntitiesStale: () => {
-    const { lastEntitiesFetch } = get();
-    return Date.now() - lastEntitiesFetch > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
-  },
-  isMembersStale: () => {
-    const { lastMembersFetch } = get();
-    return Date.now() - lastMembersFetch > WORKSPACE_MEMBERS_AUTO_REFRESH_SECONDS * 1000;
-  },
-  markEntitiesFresh: () => set({ lastEntitiesFetch: Date.now() }),
-  markMembersFresh: () => set({ lastMembersFetch: Date.now() }),
-}));
+export { useDashboardStore };
 
 interface DashboardContextType {
   setWorkspaceId: (id: string) => void;
@@ -147,6 +38,7 @@ interface DashboardContextType {
   loadProjectPapers: (projectId: string) => Promise<void>;
   loadCollectionPapers: (collectionId: string) => Promise<void>;
   loadMembers: () => Promise<void>;
+  loadAccessibleWorkspaces: () => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
@@ -217,6 +109,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
         store.markEntitiesFresh();
         store.markMembersFresh();
+
+        loadAccessibleWorkspaces();
       } catch (e) {
         handleError(e);
       } finally {
@@ -307,6 +201,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   }, [getTokenAndWorkspaceId, handleError, store]);
 
+  const loadAccessibleWorkspaces = useCallback(async () => {
+    const { token } = await getTokenAndWorkspaceId();
+    if (!token) return;
+    try {
+      const data = await fetchAccessibleWorkspaces(token);
+      store.setAccessibleWorkspaces(data);
+    } catch (e) {
+      handleError(e);
+    }
+  }, [getTokenAndWorkspaceId, handleError, store]);
+
   const setWorkspaceId = useCallback(
     (id: string) => {
       store.setWorkspaceId(id);
@@ -372,6 +277,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         loadProjectPapers,
         loadCollectionPapers,
         loadMembers,
+        loadAccessibleWorkspaces,
       }}
     >
       {children}

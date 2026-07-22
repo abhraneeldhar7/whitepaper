@@ -1,14 +1,21 @@
-"use client";
+"use client"
 
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-const TABS = ["Overview", "Projects", "Papers", "Settings"] as const;
+interface TabsGroupProps {
+  tabs: readonly string[];
+}
 
-export default function TabsNavigation() {
+export default function TabsGroup({ tabs }: TabsGroupProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
+
+  useEffect(() => {
+    setActiveTab(searchParams.get("tab") || "overview");
+  }, [searchParams]);
 
   const handleTabChange = (tab: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -18,7 +25,7 @@ export default function TabsNavigation() {
 
   return (
     <div className="border-b w-full p-2 flex gap-1">
-      {TABS.map((tab) => (
+      {tabs.map((tab) => (
         <Button
           key={tab}
           variant={activeTab === tab.toLowerCase() ? "secondary" : "ghost"}

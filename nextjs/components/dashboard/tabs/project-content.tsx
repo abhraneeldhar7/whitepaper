@@ -3,17 +3,17 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDashboardStore } from "@/lib/zustand/store";
-import TabsGroup from "@/components/dashboard/tabs-group";
-import OverviewTab from "@/components/dashboard/tabs/overview-tab";
-import MembersTab from "@/components/dashboard/tabs/members-tab";
-import PlaceholderTab from "@/components/dashboard/placeholder-tab";
+import TabsGroup from "../tabs-group";
+import OverviewTab from "./overview-tab";
+import MembersTab from "./members-tab";
+import PlaceholderTab from "../placeholder-tab";
 
-const DASHBOARD_TABS = ["Overview", "Members", "Plan", "Settings", "How to Use"] as const;
+const PROJECT_TABS = ["Overview", "Members", "Settings", "How to Use"] as const;
 
-export default function DashboardContent() {
+export default function ProjectContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
-  const projects = useDashboardStore((s) => s.projects);
+  const collections = useDashboardStore((s) => s.collections);
   const papers = useDashboardStore((s) => s.papers);
 
   useEffect(() => {
@@ -23,11 +23,10 @@ export default function DashboardContent() {
   return (
     <div className="p-1 md:p-2 pt-0 md:pt-0 w-full h-full flex-1 flex flex-col">
       <div className="border rounded-md bg-background w-full h-full flex-1 flex flex-col">
-        <TabsGroup tabs={DASHBOARD_TABS} />
+        <TabsGroup tabs={PROJECT_TABS} />
         <div className="flex-1 overflow-auto">
-          {activeTab === "overview" && <OverviewTab projects={projects} papers={papers} />}
+          {activeTab === "overview" && <OverviewTab collections={collections} papers={papers} />}
           {activeTab === "members" && <MembersTab />}
-          {activeTab === "plan" && <PlaceholderTab name="Plan" />}
           {activeTab === "settings" && <PlaceholderTab name="Settings" />}
           {activeTab === "how to use" && <PlaceholderTab name="How to Use" />}
         </div>

@@ -225,38 +225,61 @@ async def get_user_workspaces(
     ]
 
 
+async def get_user_all_workspaces(
+    db: AsyncSession, userId: str
+) -> list[dict]:
+    result = await db.execute(
+        select(
+            Workspace.workspaceId,
+            Workspace.workspaceName,
+            Workspace.workspaceSlug,
+        )
+        .distinct()
+        .join(EntityMembers, EntityMembers.workspaceId == Workspace.workspaceId)
+        .where(EntityMembers.userId == userId)
+        .order_by(Workspace.workspaceName.asc())
+    )
+    return [
+        {"workspaceId": row[0], "workspaceName": row[1], "workspaceSlug": row[2]}
+        for row in result.all()
+    ]
+
+
 async def get_workspace_members(
     db: AsyncSession, workspaceId: str
 ) -> list[dict]:
     from app.shared.schema import User
 
     result = await db.execute(
-        select(
-            EntityMembers.userId,
-            EntityMembers.entityType,
-            EntityMembers.entityId,
-            EntityMembers.role,
-            EntityMembers.grantedAt,
-            User.name,
-            User.email,
-            User.avatarUrl,
-        )
+        select(EntityMembers, User)
         .join(User, EntityMembers.userId == User.userId)
         .where(EntityMembers.workspaceId == workspaceId)
         .order_by(EntityMembers.grantedAt.asc())
     )
     return [
         {
-            "userId": row[0],
-            "entityType": row[1].value,
-            "entityId": row[2],
-            "role": row[3].value,
-            "grantedAt": row[4].isoformat(),
-            "name": row[5],
-            "email": row[6],
-            "avatarUrl": row[7],
+            "user": {
+                "userId": user.userId,
+                "name": user.name,
+                "avatarUrl": user.avatarUrl,
+                "email": user.email,
+                "username": user.username,
+                "bio": user.bio,
+                "createdAt": user.createdAt.isoformat(),
+                "updatedAt": user.updatedAt.isoformat(),
+            },
+            "membership": {
+                "workspaceId": member.workspaceId,
+                "entityId": member.entityId,
+                "userId": member.userId,
+                "entityType": member.entityType.value,
+                "role": member.role.value,
+                "grantedAt": member.grantedAt.isoformat(),
+                "grantedBySystem": member.grantedBySystem,
+                "grantedById": member.grantedById,
+            },
         }
-        for row in result.all()
+        for member, user in result.all()
     ]
 
 
