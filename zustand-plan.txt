@@ -1,0 +1,44 @@
+activeWorkspace:Workspace,
+availableWorkspaces:Workspace[]
+
+workspaceScreenContent:{
+lastFetched: number,
+workspaceId:str,
+paperIdArray:str[],
+projectIdArray:str[]
+}
+
+projectScreenContent:{
+lastFetched: number,
+projectId:str,
+paperIdArray:str[],
+collectionIdArray:str[]
+}
+
+collectionScreenContent:{
+lastFetched: number,
+collectionId:str,
+paperIdArray:str[]
+}
+
+projectsScreenMap:projectScreenContent[],
+collectionMap:collectionScreenContent[],
+papers:PapersWithRole[],
+projects:ProjectWithRole[],
+collections:CollectionsWithRole[],
+members:MembershipWithUser[],
+lastMembersFetch:number
+
+---
+
+functions needed in store:
+- upsertToProjects(ProjectsWithRole[]):
+adds project to project array if not present already, same for projectScreenMap array
+
+- upsertToCollections(CollectionWithRole[]):
+adds collections to collections array if not present already, same for collectionScreenMap array
+
+- upsertToPapers(PaperWithRole[]):
+adds paper to papers array if not present already, same for projectScreenContent and collectionScreenContent in the arrays
+
+same 3 functions for delete and update in zustand.

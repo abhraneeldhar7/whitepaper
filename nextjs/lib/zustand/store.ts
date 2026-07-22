@@ -1,124 +1,247 @@
 import { create } from "zustand";
-import {
-  DASHBOARD_IDLE_REFRESH_SECONDS,
-  WORKSPACE_MEMBERS_AUTO_REFRESH_SECONDS,
-} from "@/lib/constants";
-import {
-  type ProjectWithRole,
-  type CollectionWithRole,
-  type PaperWithRole,
-  type AccessibleWorkspace,
+import type { Workspace, MemberWithUser } from "@/lib/types";
+import type {
+  ProjectWithRole,
+  CollectionWithRole,
+  PaperWithRole,
 } from "@/lib/api/services/dashboard";
-import { type DashboardResponse } from "@/lib/api/services/workspace";
-import { type MemberWithUser } from "@/lib/types";
 
-interface DashboardState {
-  workspaceId: string | null;
-  workspace: DashboardResponse["workspace"] | null;
-  accessibleWorkspaces: AccessibleWorkspace[];
-  projects: ProjectWithRole[];
-  papers: PaperWithRole[];
-  collections: CollectionWithRole[];
-  members: MemberWithUser[];
-  isLoading: boolean;
-  error: string | null;
-
-  lastEntitiesFetch: number;
-  lastMembersFetch: number;
-
-  setWorkspaceId: (id: string) => void;
-  setWorkspace: (w: DashboardResponse["workspace"]) => void;
-  setAccessibleWorkspaces: (w: AccessibleWorkspace[]) => void;
-  setProjects: (p: ProjectWithRole[]) => void;
-  setPapers: (p: PaperWithRole[]) => void;
-  setCollections: (c: CollectionWithRole[]) => void;
-  setMembers: (m: MemberWithUser[]) => void;
-  setIsLoading: (v: boolean) => void;
-  setError: (e: string | null) => void;
-  updateProject: (projectId: string, data: Partial<ProjectWithRole>) => void;
-  removeProject: (projectId: string) => void;
-  addProject: (p: ProjectWithRole) => void;
-  updatePaper: (paperId: string, data: Partial<PaperWithRole>) => void;
-  removePaper: (paperId: string) => void;
-  addPaper: (p: PaperWithRole) => void;
-  updateCollection: (collectionId: string, data: Partial<CollectionWithRole>) => void;
-  removeCollection: (collectionId: string) => void;
-  addCollection: (c: CollectionWithRole) => void;
-
-  isEntitiesStale: () => boolean;
-  isMembersStale: () => boolean;
-  markEntitiesFresh: () => void;
-  markMembersFresh: () => void;
+interface WorkspaceScreenContent {
+  lastFetched: number;
+  workspaceId: string;
+  paperIdArray: string[];
+  projectIdArray: string[];
 }
 
-export const useDashboardStore = create<DashboardState>((set, get) => ({
-  workspaceId: null,
-  workspace: null,
-  accessibleWorkspaces: [],
-  projects: [],
+interface ProjectScreenContent {
+  lastFetched: number;
+  projectId: string;
+  paperIdArray: string[];
+  collectionIdArray: string[];
+}
+
+interface CollectionScreenContent {
+  lastFetched: number;
+  collectionId: string;
+  paperIdArray: string[];
+}
+
+interface DashboardState {
+  activeWorkspace: Workspace | null;
+  availableWorkspaces: Workspace[];
+  workspaceScreenContent: WorkspaceScreenContent | null;
+  projectScreenMap: ProjectScreenContent[];
+  collectionScreenMap: CollectionScreenContent[];
+  papers: PaperWithRole[];
+  projects: ProjectWithRole[];
+  collections: CollectionWithRole[];
+  members: MemberWithUser[];
+  lastMembersFetch: number;
+
+  upsertToProjects: (projects: ProjectWithRole[]) => void;
+  upsertToCollections: (collections: CollectionWithRole[]) => void;
+  upsertToPapers: (papers: PaperWithRole[]) => void;
+
+  deleteFromProjects: (projectId: string) => void;
+  deleteFromCollections: (collectionId: string) => void;
+  deleteFromPapers: (paperId: string) => void;
+
+  updateInProjects: (projectId: string, data: Partial<ProjectWithRole>) => void;
+  updateInCollections: (collectionId: string, data: Partial<CollectionWithRole>) => void;
+  updateInPapers: (paperId: string, data: Partial<PaperWithRole>) => void;
+}
+
+export const useDashboardStore = create<DashboardState>((set) => ({
+  activeWorkspace: null,
+  availableWorkspaces: [],
+  workspaceScreenContent: null,
+  projectScreenMap: [],
+  collectionScreenMap: [],
   papers: [],
+  projects: [],
   collections: [],
   members: [],
-  isLoading: true,
-  error: null,
-
-  lastEntitiesFetch: 0,
   lastMembersFetch: 0,
 
-  setWorkspaceId: (id) => set({ workspaceId: id }),
-  setWorkspace: (w) => set({ workspace: w }),
-  setAccessibleWorkspaces: (w) => set({ accessibleWorkspaces: w }),
-  setProjects: (p) => set({ projects: p }),
-  setPapers: (p) => set({ papers: p }),
-  setCollections: (c) => set({ collections: c }),
-  setMembers: (m: MemberWithUser[]) => set({ members: m }),
-  setIsLoading: (v) => set({ isLoading: v }),
-  setError: (e) => set({ error: e }),
+  upsertToProjects: (incoming) =>
+    set((s) => {
+      const updatedProjects = [...s.projects];
+      const updatedMap = [...s.projectScreenMap];
 
-  updateProject: (projectId, data) =>
+      for (const p of incoming) {
+        const idx = updatedProjects.findIndex((x) => x.projectId === p.projectId);
+        if (idx >= 0) {
+          updatedProjects[idx] = p;
+        } else {
+          updatedProjects.push(p);
+        }
+        const mapIdx = updatedMap.findIndex((x) => x.projectId === p.projectId);
+        if (mapIdx >= 0) {
+          updatedMap[mapIdx] = { ...updatedMap[mapIdx], lastFetched: Date.now() };
+        } else {
+          updatedMap.push({
+            lastFetched: Date.now(),
+            projectId: p.projectId,
+            paperIdArray: [],
+            collectionIdArray: [],
+          });
+        }
+      }
+
+      return { projects: updatedProjects, projectScreenMap: updatedMap };
+    }),
+
+  upsertToCollections: (incoming) =>
+    set((s) => {
+      const updatedCollections = [...s.collections];
+      const updatedMap = [...s.collectionScreenMap];
+
+      for (const c of incoming) {
+        const idx = updatedCollections.findIndex((x) => x.collectionId === c.collectionId);
+        if (idx >= 0) {
+          updatedCollections[idx] = c;
+        } else {
+          updatedCollections.push(c);
+        }
+        const mapIdx = updatedMap.findIndex((x) => x.collectionId === c.collectionId);
+        if (mapIdx >= 0) {
+          updatedMap[mapIdx] = { ...updatedMap[mapIdx], lastFetched: Date.now() };
+        } else {
+          updatedMap.push({
+            lastFetched: Date.now(),
+            collectionId: c.collectionId,
+            paperIdArray: [],
+          });
+        }
+      }
+
+      return { collections: updatedCollections, collectionScreenMap: updatedMap };
+    }),
+
+  upsertToPapers: (incoming) =>
+    set((s) => {
+      const updatedPapers = [...s.papers];
+
+      for (const p of incoming) {
+        const idx = updatedPapers.findIndex((x) => x.paperId === p.paperId);
+        if (idx >= 0) {
+          updatedPapers[idx] = p;
+        } else {
+          updatedPapers.push(p);
+        }
+      }
+
+      const addedPaperIds = incoming.map((p) => p.paperId);
+      const updatedProjectScreenMap = [...s.projectScreenMap];
+      const updatedCollectionScreenMap = [...s.collectionScreenMap];
+
+      for (const p of incoming) {
+        if (p.projectId) {
+          const mapIdx = updatedProjectScreenMap.findIndex(
+            (x) => x.projectId === p.projectId
+          );
+          if (mapIdx >= 0) {
+            updatedProjectScreenMap[mapIdx] = {
+              ...updatedProjectScreenMap[mapIdx],
+              paperIdArray: [
+                ...new Set([
+                  ...updatedProjectScreenMap[mapIdx].paperIdArray,
+                  ...addedPaperIds,
+                ]),
+              ],
+            };
+          } else {
+            updatedProjectScreenMap.push({
+              lastFetched: 0,
+              projectId: p.projectId,
+              paperIdArray: [...addedPaperIds],
+              collectionIdArray: [],
+            });
+          }
+        }
+        if (p.collectionId) {
+          const mapIdx = updatedCollectionScreenMap.findIndex(
+            (x) => x.collectionId === p.collectionId
+          );
+          if (mapIdx >= 0) {
+            updatedCollectionScreenMap[mapIdx] = {
+              ...updatedCollectionScreenMap[mapIdx],
+              paperIdArray: [
+                ...new Set([
+                  ...updatedCollectionScreenMap[mapIdx].paperIdArray,
+                  ...addedPaperIds,
+                ]),
+              ],
+            };
+          } else {
+            updatedCollectionScreenMap.push({
+              lastFetched: 0,
+              collectionId: p.collectionId,
+              paperIdArray: [...addedPaperIds],
+            });
+          }
+        }
+      }
+
+      return {
+        papers: updatedPapers,
+        projectScreenMap: updatedProjectScreenMap,
+        collectionScreenMap: updatedCollectionScreenMap,
+      };
+    }),
+
+  deleteFromProjects: (projectId) =>
+    set((s) => ({
+      projects: s.projects.filter((p) => p.projectId !== projectId),
+      projectScreenMap: s.projectScreenMap.filter((psc) => psc.projectId !== projectId),
+    })),
+
+  deleteFromCollections: (collectionId) =>
+    set((s) => ({
+      collections: s.collections.filter((c) => c.collectionId !== collectionId),
+      collectionScreenMap: s.collectionScreenMap.filter((csc) => csc.collectionId !== collectionId),
+    })),
+
+  deleteFromPapers: (paperId) =>
+    set((s) => {
+      const paper = s.papers.find((p) => p.paperId === paperId);
+      return {
+        papers: s.papers.filter((p) => p.paperId !== paperId),
+        projectScreenMap: paper?.projectId
+          ? s.projectScreenMap.map((psc) =>
+              psc.projectId === paper.projectId
+                ? { ...psc, paperIdArray: psc.paperIdArray.filter((id) => id !== paperId) }
+                : psc
+            )
+          : s.projectScreenMap,
+        collectionScreenMap: paper?.collectionId
+          ? s.collectionScreenMap.map((csc) =>
+              csc.collectionId === paper.collectionId
+                ? { ...csc, paperIdArray: csc.paperIdArray.filter((id) => id !== paperId) }
+                : csc
+            )
+          : s.collectionScreenMap,
+      };
+    }),
+
+  updateInProjects: (projectId, data) =>
     set((s) => ({
       projects: s.projects.map((p) =>
         p.projectId === projectId ? { ...p, ...data } : p
       ),
     })),
-  removeProject: (projectId) =>
-    set((s) => ({
-      projects: s.projects.filter((p) => p.projectId !== projectId),
-    })),
-  addProject: (p) => set((s) => ({ projects: [...s.projects, p] })),
 
-  updatePaper: (paperId, data) =>
-    set((s) => ({
-      papers: s.papers.map((p) =>
-        p.paperId === paperId ? { ...p, ...data } : p
-      ),
-    })),
-  removePaper: (paperId) =>
-    set((s) => ({
-      papers: s.papers.filter((p) => p.paperId !== paperId),
-    })),
-  addPaper: (p) => set((s) => ({ papers: [...s.papers, p] })),
-
-  updateCollection: (collectionId, data) =>
+  updateInCollections: (collectionId, data) =>
     set((s) => ({
       collections: s.collections.map((c) =>
         c.collectionId === collectionId ? { ...c, ...data } : c
       ),
     })),
-  removeCollection: (collectionId) =>
-    set((s) => ({
-      collections: s.collections.filter((c) => c.collectionId !== collectionId),
-    })),
-  addCollection: (c) => set((s) => ({ collections: [...s.collections, c] })),
 
-  isEntitiesStale: () => {
-    const { lastEntitiesFetch } = get();
-    return Date.now() - lastEntitiesFetch > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
-  },
-  isMembersStale: () => {
-    const { lastMembersFetch } = get();
-    return Date.now() - lastMembersFetch > WORKSPACE_MEMBERS_AUTO_REFRESH_SECONDS * 1000;
-  },
-  markEntitiesFresh: () => set({ lastEntitiesFetch: Date.now() }),
-  markMembersFresh: () => set({ lastMembersFetch: Date.now() }),
+  updateInPapers: (paperId, data) =>
+    set((s) => ({
+      papers: s.papers.map((p) =>
+        p.paperId === paperId ? { ...p, ...data } : p
+      ),
+    })),
 }));

@@ -1,3 +1,4 @@
 export const DASHBOARD_IDLE_REFRESH_SECONDS = 20;
 export const WORKSPACE_MEMBERS_AUTO_REFRESH_SECONDS = 60;
 export const LAST_VISITED_KEY = "lastVisitedWorkspaceId";
+export const AUTO_REFRESH_CHECKER_TICK_SECONDS = 30;

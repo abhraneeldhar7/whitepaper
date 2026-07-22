@@ -1,0 +1,23 @@
+now to fix and clean the dashboard provider.
+error handling for offline and unauthorized is actually good, keep it.
+starting from scratch, so rip out any other logics from before.
+
+the dashboardProvider will handle the current working workspaceId from localStorage and set its value when resolved from server or changed by user.
+
+the algorithm to find the workspaceId is in  workspace_access_controll.txt follow that.
+
+for loading data per screen:
+have separate functions in dashboard to resolve it.
+like rootScreen, projectScreen(projectId), collectionScreen(collectionId).
+these will when the page is navigated to, check if the workspaceScreenContent, or projectScreenMap or collectionScreenMap is empty for that given entityId. if its empty that means the data isnt hydrated for that screen, fetch the data and upsert the values in zustand using the functions defined.
+and if its present if the lastFetched time is older than DASHBOARD_IDLE_REFRESH_SECONDS in cosntants.ts then also fetch again for that screen. by data fetching I mean both the papers and whatever the entities (project or collection)sd are there, there should be defined endpoint or funciton for this already, just check those. remember to update the lastFetched value.
+
+for data fetching, use the api client and add the endpoints in the file propeprly. and have proper helper funcitons for things in the nextjs\lib\api\services example getProjectById or getPaperById, etc, etc. 
+
+and for the autorefresh, its already being handled by the checking on navigation. but also run a checker which checks every AUTO_REFRESH_CHECKER_TICK_SECONDS if the maps are outdated, then do the fetching and stuff. so have a proper refetching or fetching functions whichever is cleaner, i think just fetching should be cleaner which does all that.
+
+
+
+One gap I see: the store's upsertToProjects only sets lastFetched: Date.now() when creating a new projectsScreenMap entry. On subsequent upserts (refresh), the existing entry keeps its old lastFetched. Same for collectionMap. The provider should update lastFetched itself via setState after each screen load — or I can tweak the upserts to always update lastFetched on existing map entries too. Your call.
+
+fix: update the lastFetched on both upsert and insert.
