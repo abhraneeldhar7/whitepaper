@@ -15,7 +15,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const { getToken, isSignedIn } = useAuth();
+  const { isSignedIn } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +30,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const token = await getToken();
-      if (!token) throw new Error("No auth token");
-      const data = await getMe(token);
+      const data = await getMe();
       setUser(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");

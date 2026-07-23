@@ -1,42 +1,226 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+type RequestMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+type QueryPrimitive = string | number | boolean | null | undefined;
+type AuthMode = "required" | "optional" | "none";
 
-interface ApiOptions extends RequestInit {
-  token?: string;
+const REQUEST_TIMEOUT_MS = 30000;
+const MISSING_TOKEN_ERROR = "Authentication token is unavailable.";
+
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
 }
 
-async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { token, ...fetchOptions } = options;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(fetchOptions.headers as Record<string, string>),
+export class NetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NetworkError";
+  }
+}
+
+type ClerkWindow = Window & {
+  Clerk?: {
+    loaded?: boolean;
+    load?: () => Promise<void>;
+    session?: {
+      getToken?: () => Promise<string | null>;
+    };
   };
+};
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
+export type QueryParams = Record<string, QueryPrimitive | QueryPrimitive[]>;
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...fetchOptions,
-    headers,
-  });
+export type RequestOptions = {
+  body?: unknown;
+  query?: QueryParams;
+  headers?: HeadersInit;
+  auth?: AuthMode;
+};
 
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${res.statusText}`);
-  }
+export type ApiClient = {
+  get: <T>(path: string, options?: RequestOptions) => Promise<T>;
+  post: <T>(path: string, options?: RequestOptions) => Promise<T>;
+  patch: <T>(path: string, options?: RequestOptions) => Promise<T>;
+  put: <T>(path: string, options?: RequestOptions) => Promise<T>;
+  delete: <T>(path: string, options?: RequestOptions) => Promise<T>;
+};
 
-  return res.json();
+type ApiRequestOptions = RequestOptions & {
+  method?: RequestMethod;
+};
+
+type TokenResolver = (auth: AuthMode) => Promise<string | null>;
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+
+function resolveApiBaseUrl(): string {
+  if (API_BASE_URL) return API_BASE_URL;
+  if (typeof window !== "undefined") return window.location.origin;
+  throw new Error("NEXT_PUBLIC_API_BASE_URL must be configured for SSR API requests.");
 }
 
-export const api = {
-  get: <T>(path: string, options?: ApiOptions) =>
-    request<T>(path, { ...options, method: "GET" }),
+function toRequestUrl(path: string, query?: QueryParams): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const apiBaseUrl = resolveApiBaseUrl();
+  const url = new URL(normalizedPath, `${apiBaseUrl}/`);
+  if (!query) return url.toString();
 
-  post: <T>(path: string, body?: unknown, options?: ApiOptions) =>
-    request<T>(path, { ...options, method: "POST", body: body ? JSON.stringify(body) : undefined }),
+  for (const [key, value] of Object.entries(query)) {
+    const values = Array.isArray(value) ? value : [value];
+    for (const item of values) {
+      if (item === null || item === undefined) continue;
+      url.searchParams.append(key, String(item));
+    }
+  }
 
-  patch: <T>(path: string, body?: unknown, options?: ApiOptions) =>
-    request<T>(path, { ...options, method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
+  return url.toString();
+}
 
-  delete: <T>(path: string, options?: ApiOptions) =>
-    request<T>(path, { ...options, method: "DELETE" }),
-};
+async function resolveBrowserToken(auth: AuthMode): Promise<string | null> {
+  if (auth === "none") return null;
+
+  if (typeof window === "undefined") {
+    throw new Error("Browser API client cannot be used for authenticated SSR requests.");
+  }
+
+  const clerk = (window as ClerkWindow).Clerk;
+  if (!clerk) throw new Error("Clerk is not available in the browser.");
+
+  if (!clerk.loaded) await clerk.load?.();
+  if (!clerk.loaded) throw new Error("Clerk failed to initialize.");
+
+  const token = (await clerk.session?.getToken?.()) ?? null;
+  if (!token && auth === "required") {
+    throw new Error(MISSING_TOKEN_ERROR);
+  }
+
+  return token;
+}
+
+function createServerTokenResolver(getToken: () => Promise<string | null>): TokenResolver {
+  return async (auth: AuthMode) => {
+    if (auth === "none") return null;
+    const token = await getToken();
+    if (!token && auth === "required") {
+      throw new Error(MISSING_TOKEN_ERROR);
+    }
+    return token;
+  };
+}
+
+function createRequestClient(resolveToken: TokenResolver): ApiClient {
+  async function apiRequest<T>(
+    path: string,
+    {
+      method = "GET",
+      body,
+      query,
+      headers,
+      auth = "required",
+    }: ApiRequestOptions = {},
+  ): Promise<T> {
+    let resolvedToken: string | null = null;
+    if (auth !== "none") {
+      if (auth === "optional") {
+        try {
+          resolvedToken = await resolveToken(auth);
+        } catch {
+          resolvedToken = null;
+        }
+      } else {
+        resolvedToken = await resolveToken(auth);
+      }
+    }
+
+    const requestHeaders = new Headers(headers);
+    requestHeaders.set("accept", "application/json");
+
+    let requestBody: BodyInit | undefined;
+    if (body instanceof FormData) {
+      requestBody = body;
+      requestHeaders.delete("content-type");
+    } else if (
+      body !== undefined &&
+      body !== null &&
+      !(body instanceof Blob) &&
+      !(body instanceof ArrayBuffer) &&
+      !ArrayBuffer.isView(body) &&
+      !(typeof body === "string")
+    ) {
+      requestBody = JSON.stringify(body);
+      requestHeaders.set("content-type", "application/json");
+    } else if (body !== undefined && body !== null) {
+      requestBody = body as BodyInit;
+    }
+
+    if (resolvedToken) {
+      requestHeaders.set("authorization", `Bearer ${resolvedToken}`);
+    } else {
+      requestHeaders.delete("authorization");
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+      response = await fetch(toRequestUrl(path, query), {
+        method,
+        headers: requestHeaders,
+        body: requestBody,
+        credentials: "include",
+        signal: controller.signal,
+      });
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new NetworkError(`Request timed out after ${REQUEST_TIMEOUT_MS}ms`);
+      }
+      throw err;
+    }
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new ApiError(message || `Request failed with ${response.status}`, response.status);
+    }
+
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      return (await response.text()) as T;
+    }
+
+    return response.json() as Promise<T>;
+  }
+
+  return {
+    get: <T>(path: string, options?: RequestOptions) =>
+      apiRequest<T>(path, { method: "GET", ...options }),
+    post: <T>(path: string, options?: RequestOptions) =>
+      apiRequest<T>(path, { method: "POST", ...options }),
+    patch: <T>(path: string, options?: RequestOptions) =>
+      apiRequest<T>(path, { method: "PATCH", ...options }),
+    put: <T>(path: string, options?: RequestOptions) =>
+      apiRequest<T>(path, { method: "PUT", ...options }),
+    delete: <T>(path: string, options?: RequestOptions) =>
+      apiRequest<T>(path, { method: "DELETE", ...options }),
+  };
+}
+
+export function createApiClient(tokenOrGetToken: (() => Promise<string | null>) | string | null): ApiClient {
+  if (typeof tokenOrGetToken === "function") {
+    return createRequestClient(createServerTokenResolver(tokenOrGetToken));
+  }
+  const staticToken = tokenOrGetToken;
+  return createRequestClient(createServerTokenResolver(async () => staticToken));
+}
+
+export const apiClient: ApiClient = createRequestClient(resolveBrowserToken);

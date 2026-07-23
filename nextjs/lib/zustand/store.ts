@@ -6,22 +6,25 @@ import type {
   PaperWithRole,
 } from "@/lib/api/services/dashboard";
 
-interface WorkspaceScreenContent {
+interface WorkspaceScreenMap {
   lastFetched: number;
+  isLoading: boolean;
   workspaceId: string;
   paperIdArray: string[];
   projectIdArray: string[];
 }
 
-interface ProjectScreenContent {
+interface ProjectScreenMap {
   lastFetched: number;
+  isLoading: boolean;
   projectId: string;
   paperIdArray: string[];
   collectionIdArray: string[];
 }
 
-interface CollectionScreenContent {
+interface CollectionScreenMap {
   lastFetched: number;
+  isLoading: boolean;
   collectionId: string;
   paperIdArray: string[];
 }
@@ -29,15 +32,14 @@ interface CollectionScreenContent {
 interface DashboardState {
   activeWorkspace: Workspace | null;
   availableWorkspaces: Workspace[];
-  workspaceScreenContent: WorkspaceScreenContent | null;
-  projectScreenMap: ProjectScreenContent[];
-  collectionScreenMap: CollectionScreenContent[];
+  workspaceScreenMap: WorkspaceScreenMap | null;
+  projectScreenMap: ProjectScreenMap[];
+  collectionScreenMap: CollectionScreenMap[];
   papers: PaperWithRole[];
   projects: ProjectWithRole[];
   collections: CollectionWithRole[];
   members: MemberWithUser[];
   lastMembersFetch: number;
-  hydrated: boolean;
 
   upsertToProjects: (projects: ProjectWithRole[]) => void;
   upsertToCollections: (collections: CollectionWithRole[]) => void;
@@ -55,7 +57,7 @@ interface DashboardState {
 export const useDashboardStore = create<DashboardState>((set) => ({
   activeWorkspace: null,
   availableWorkspaces: [],
-  workspaceScreenContent: null,
+  workspaceScreenMap: null,
   projectScreenMap: [],
   collectionScreenMap: [],
   papers: [],
@@ -63,133 +65,38 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   collections: [],
   members: [],
   lastMembersFetch: 0,
-  hydrated: false,
 
   upsertToProjects: (incoming) =>
     set((s) => {
-      const updatedProjects = [...s.projects];
-      const updatedMap = [...s.projectScreenMap];
-
+      const updated = [...s.projects];
       for (const p of incoming) {
-        const idx = updatedProjects.findIndex((x) => x.projectId === p.projectId);
-        if (idx >= 0) {
-          updatedProjects[idx] = p;
-        } else {
-          updatedProjects.push(p);
-        }
-        const mapIdx = updatedMap.findIndex((x) => x.projectId === p.projectId);
-        if (mapIdx >= 0) {
-          updatedMap[mapIdx] = { ...updatedMap[mapIdx], lastFetched: Date.now() };
-        } else {
-          updatedMap.push({
-            lastFetched: Date.now(),
-            projectId: p.projectId,
-            paperIdArray: [],
-            collectionIdArray: [],
-          });
-        }
+        const idx = updated.findIndex((x) => x.projectId === p.projectId);
+        if (idx >= 0) updated[idx] = p;
+        else updated.push(p);
       }
-
-      return { projects: updatedProjects, projectScreenMap: updatedMap };
+      return { projects: updated };
     }),
 
   upsertToCollections: (incoming) =>
     set((s) => {
-      const updatedCollections = [...s.collections];
-      const updatedMap = [...s.collectionScreenMap];
-
+      const updated = [...s.collections];
       for (const c of incoming) {
-        const idx = updatedCollections.findIndex((x) => x.collectionId === c.collectionId);
-        if (idx >= 0) {
-          updatedCollections[idx] = c;
-        } else {
-          updatedCollections.push(c);
-        }
-        const mapIdx = updatedMap.findIndex((x) => x.collectionId === c.collectionId);
-        if (mapIdx >= 0) {
-          updatedMap[mapIdx] = { ...updatedMap[mapIdx], lastFetched: Date.now() };
-        } else {
-          updatedMap.push({
-            lastFetched: Date.now(),
-            collectionId: c.collectionId,
-            paperIdArray: [],
-          });
-        }
+        const idx = updated.findIndex((x) => x.collectionId === c.collectionId);
+        if (idx >= 0) updated[idx] = c;
+        else updated.push(c);
       }
-
-      return { collections: updatedCollections, collectionScreenMap: updatedMap };
+      return { collections: updated };
     }),
 
   upsertToPapers: (incoming) =>
     set((s) => {
-      const updatedPapers = [...s.papers];
-
+      const updated = [...s.papers];
       for (const p of incoming) {
-        const idx = updatedPapers.findIndex((x) => x.paperId === p.paperId);
-        if (idx >= 0) {
-          updatedPapers[idx] = p;
-        } else {
-          updatedPapers.push(p);
-        }
+        const idx = updated.findIndex((x) => x.paperId === p.paperId);
+        if (idx >= 0) updated[idx] = p;
+        else updated.push(p);
       }
-
-      const addedPaperIds = incoming.map((p) => p.paperId);
-      const updatedProjectScreenMap = [...s.projectScreenMap];
-      const updatedCollectionScreenMap = [...s.collectionScreenMap];
-
-      for (const p of incoming) {
-        if (p.projectId) {
-          const mapIdx = updatedProjectScreenMap.findIndex(
-            (x) => x.projectId === p.projectId
-          );
-          if (mapIdx >= 0) {
-            updatedProjectScreenMap[mapIdx] = {
-              ...updatedProjectScreenMap[mapIdx],
-              paperIdArray: [
-                ...new Set([
-                  ...updatedProjectScreenMap[mapIdx].paperIdArray,
-                  ...addedPaperIds,
-                ]),
-              ],
-            };
-          } else {
-            updatedProjectScreenMap.push({
-              lastFetched: 0,
-              projectId: p.projectId,
-              paperIdArray: [...addedPaperIds],
-              collectionIdArray: [],
-            });
-          }
-        }
-        if (p.collectionId) {
-          const mapIdx = updatedCollectionScreenMap.findIndex(
-            (x) => x.collectionId === p.collectionId
-          );
-          if (mapIdx >= 0) {
-            updatedCollectionScreenMap[mapIdx] = {
-              ...updatedCollectionScreenMap[mapIdx],
-              paperIdArray: [
-                ...new Set([
-                  ...updatedCollectionScreenMap[mapIdx].paperIdArray,
-                  ...addedPaperIds,
-                ]),
-              ],
-            };
-          } else {
-            updatedCollectionScreenMap.push({
-              lastFetched: 0,
-              collectionId: p.collectionId,
-              paperIdArray: [...addedPaperIds],
-            });
-          }
-        }
-      }
-
-      return {
-        papers: updatedPapers,
-        projectScreenMap: updatedProjectScreenMap,
-        collectionScreenMap: updatedCollectionScreenMap,
-      };
+      return { papers: updated };
     }),
 
   deleteFromProjects: (projectId) =>
@@ -202,6 +109,11 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     set((s) => ({
       collections: s.collections.filter((c) => c.collectionId !== collectionId),
       collectionScreenMap: s.collectionScreenMap.filter((csc) => csc.collectionId !== collectionId),
+      projectScreenMap: s.projectScreenMap.map((psc) =>
+        psc.collectionIdArray.includes(collectionId)
+          ? { ...psc, collectionIdArray: psc.collectionIdArray.filter((id) => id !== collectionId) }
+          : psc
+      ),
     })),
 
   deleteFromPapers: (paperId) =>

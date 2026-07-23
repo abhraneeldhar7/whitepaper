@@ -1,69 +1,52 @@
 "use client"
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { useDashboard, useDashboardStore } from "@/components/dashboard/dashboard-provider";
 import DashboardRoot from "@/components/dashboard/dashboard-root";
 import DashboardContent from "@/components/dashboard/dashboard-content";
 import OverviewTab from "@/components/dashboard/tabs/overview-tab";
 import MembersTab from "@/components/dashboard/tabs/members-tab";
 import PlaceholderTab from "@/components/dashboard/placeholder-tab";
+import type { CollectionWithRole, PaperWithRole } from "@/lib/api/services/dashboard";
 
 const TABS = ["Overview", "Members", "Settings", "How to Use"];
-
-function tabKey(tab: string) {
-  return tab.toLowerCase().replace(/\s+/g, "_");
-}
 
 export default function ProjectPage() {
   const params = useParams();
   const projectId = params["project-Id"] as string;
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || tabKey(TABS[0]));
-  const { projectScreen } = useDashboard();
+  const [activeTab, setActiveTab] = useState("overview");
+  const { resolveProjectScreen } = useDashboard();
+  const [collections, setCollections] = useState<CollectionWithRole[]>([]);
+  const [papers, setPapers] = useState<PaperWithRole[]>([]);
 
-  useEffect(() => {
-    projectScreen(projectId);
-  }, [projectId, projectScreen]);
-
-  useEffect(() => {
-    setActiveTab(searchParams.get("tab") || tabKey(TABS[0]));
-  }, [searchParams]);
-
-  const onTabChange = (tab: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", tab);
-    router.push(`?${params.toString()}`);
-  };
-
-  const psc = useDashboardStore((s) =>
+  const psm = useDashboardStore((s) =>
     s.projectScreenMap.find((x) => x.projectId === projectId)
   );
-  const collections = useDashboardStore((s) => s.collections);
-  const papers = useDashboardStore((s) => s.papers);
-  const loading = !psc || psc.lastFetched === 0;
+  const loading = !psm || psm.isLoading;
 
-  const projectCollections = psc
-    ? collections.filter((c) => psc.collectionIdArray.includes(c.collectionId))
-    : [];
-  const projectPapers = psc
-    ? papers.filter((p) => psc.paperIdArray.includes(p.paperId))
-    : [];
+  useEffect(() => {
+    resolveProjectScreen(projectId).then((data) => {
+      if (data) {
+        setCollections(data.collections);
+        setPapers(data.papers);
+      }
+    });
+  }, [projectId]);
 
   return (
     <DashboardRoot>
-      <DashboardContent tabs={TABS} currentTab={activeTab} onTabChange={onTabChange}>
-        {activeTab === tabKey("Overview") && (
+      <DashboardContent tabs={TABS} onTabChange={setActiveTab}>
+        {activeTab === "overview" && (
           <OverviewTab
             loading={loading}
-            collections={projectCollections}
-            papers={projectPapers}
+            collections={collections}
+            papers={papers}
           />
         )}
-        {activeTab === tabKey("Members") && <MembersTab />}
-        {activeTab === tabKey("Settings") && <PlaceholderTab name="Settings" />}
-        {activeTab === tabKey("How to Use") && <PlaceholderTab name="How to Use" />}
+        {activeTab === "members" && <MembersTab />}
+        {activeTab === "settings" && <PlaceholderTab name="Settings" />}
+        {activeTab === "how_to_use" && <PlaceholderTab name="How to Use" />}
       </DashboardContent>
     </DashboardRoot>
   );

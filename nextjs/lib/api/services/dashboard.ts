@@ -1,4 +1,4 @@
-import { api } from "@/lib/api/api-client";
+import { apiClient, type ApiClient } from "@/lib/api/api-client";
 import { PRIVATE } from "@/lib/api/endpoints";
 import type { Project, Collection, Paper, MemberWithUser } from "@/lib/types";
 
@@ -15,65 +15,59 @@ export interface PaperWithRole extends Paper {
 }
 
 export function fetchDashboardProjects(
-  token: string,
-  workspaceId: string
+  workspaceId: string,
+  client: ApiClient = apiClient,
 ): Promise<ProjectWithRole[]> {
-  return api.get<ProjectWithRole[]>(
-    `${PRIVATE.DASHBOARD_PROJECTS}?workspaceId=${workspaceId}`,
-    { token }
+  return client.get<ProjectWithRole[]>(
+    `${PRIVATE.DASHBOARD_PROJECTS}?workspaceId=${workspaceId}`
   );
 }
 
 export function fetchDashboardPapers(
-  token: string,
-  workspaceId: string
+  workspaceId: string,
+  client: ApiClient = apiClient,
 ): Promise<PaperWithRole[]> {
-  return api.get<PaperWithRole[]>(
-    `${PRIVATE.DASHBOARD_PAPERS}?workspaceId=${workspaceId}`,
-    { token }
+  return client.get<PaperWithRole[]>(
+    `${PRIVATE.DASHBOARD_PAPERS}?workspaceId=${workspaceId}`
   );
 }
 
 export function fetchProjectCollections(
-  token: string,
   projectId: string,
-  workspaceId: string
+  workspaceId: string,
+  client: ApiClient = apiClient,
 ): Promise<CollectionWithRole[]> {
-  return api.get<CollectionWithRole[]>(
-    `${PRIVATE.PROJECT_COLLECTIONS}/${projectId}/collections?workspaceId=${workspaceId}`,
-    { token }
+  return client.get<CollectionWithRole[]>(
+    `${PRIVATE.PROJECT_COLLECTIONS}/${projectId}/collections?workspaceId=${workspaceId}`
   );
 }
 
 export function fetchProjectPapers(
-  token: string,
   projectId: string,
-  workspaceId: string
+  workspaceId: string,
+  client: ApiClient = apiClient,
 ): Promise<PaperWithRole[]> {
-  return api.get<PaperWithRole[]>(
-    `${PRIVATE.PROJECT_PAPERS}/${projectId}/papers?workspaceId=${workspaceId}`,
-    { token }
+  return client.get<PaperWithRole[]>(
+    `${PRIVATE.PROJECT_PAPERS}/${projectId}/papers?workspaceId=${workspaceId}`
   );
 }
 
 export function fetchCollectionPapers(
-  token: string,
   collectionId: string,
-  workspaceId: string
+  workspaceId: string,
+  client: ApiClient = apiClient,
 ): Promise<PaperWithRole[]> {
-  return api.get<PaperWithRole[]>(
-    `${PRIVATE.COLLECTION_PAPERS}/${collectionId}/papers?workspaceId=${workspaceId}`,
-    { token }
+  return client.get<PaperWithRole[]>(
+    `${PRIVATE.COLLECTION_PAPERS}/${collectionId}/papers?workspaceId=${workspaceId}`
   );
 }
 
 export function fetchWorkspaceMembers(
-  token: string,
-  workspaceId: string
+  workspaceId: string,
+  client: ApiClient = apiClient,
 ): Promise<MemberWithUser[]> {
-  return api.get<MemberWithUser[]>(
-    `${PRIVATE.DASHBOARD_MEMBERS}?workspaceId=${workspaceId}`,
-    { token }
+  return client.get<MemberWithUser[]>(
+    `${PRIVATE.DASHBOARD_MEMBERS}?workspaceId=${workspaceId}`
   );
 }
 
@@ -84,10 +78,9 @@ export interface AccessibleWorkspace {
 }
 
 export function fetchAccessibleWorkspaces(
-  token: string
+  client: ApiClient = apiClient,
 ): Promise<AccessibleWorkspace[]> {
-  return api.get<AccessibleWorkspace[]>(
-    PRIVATE.DASHBOARD_WORKSPACES,
-    { token }
+  return client.get<AccessibleWorkspace[]>(
+    PRIVATE.DASHBOARD_WORKSPACES
   );
 }

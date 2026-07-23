@@ -1,4 +1,4 @@
-import { api } from "@/lib/api/api-client";
+import { apiClient, type ApiClient } from "@/lib/api/api-client";
 import { PRIVATE } from "@/lib/api/endpoints";
 
 export interface WorkspaceItem {
@@ -46,16 +46,17 @@ export interface DashboardResponse {
 }
 
 export function resolveDashboard(
-  token: string,
-  workspaceId?: string
+  workspaceId?: string,
+  client: ApiClient = apiClient,
 ): Promise<DashboardResponse> {
   const params = workspaceId ? `?workspaceId=${workspaceId}` : "";
-  return api.get<DashboardResponse>(
-    `${PRIVATE.RESOLVE_DASHBOARD}${params}`,
-    { token }
+  return client.get<DashboardResponse>(
+    `${PRIVATE.RESOLVE_DASHBOARD}${params}`
   );
 }
 
-export function listWorkspaces(token: string): Promise<WorkspaceItem[]> {
-  return api.get<WorkspaceItem[]>(PRIVATE.LIST_WORKSPACES, { token });
+export function listWorkspaces(
+  client: ApiClient = apiClient,
+): Promise<WorkspaceItem[]> {
+  return client.get<WorkspaceItem[]>(PRIVATE.LIST_WORKSPACES);
 }

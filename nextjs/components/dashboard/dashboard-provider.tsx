@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
   DASHBOARD_IDLE_REFRESH_SECONDS,
@@ -38,17 +37,17 @@ export { useDashboardStore };
 
 interface DashboardContextType {
   setWorkspaceId: (id: string) => void;
-  rootScreen: () => Promise<{
+  resolveWorkspaceScreen: () => Promise<{
     projects: ProjectWithRole[];
     papers: PaperWithRole[];
   } | null>;
-  projectScreen: (
+  resolveProjectScreen: (
     projectId: string
   ) => Promise<{
     collections: CollectionWithRole[];
     papers: PaperWithRole[];
   } | null>;
-  collectionScreen: (collectionId: string) => Promise<PaperWithRole[] | null>;
+  resolveCollectionScreen: (collectionId: string) => Promise<PaperWithRole[] | null>;
   loadMembers: () => Promise<void>;
   loadAccessibleWorkspaces: () => Promise<void>;
 }
@@ -60,7 +59,6 @@ const DashboardContext = createContext<DashboardContextType | undefined>(
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { getToken } = useAuth();
   const initializedRef = useRef(false);
   const checkerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -78,19 +76,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [router]
   );
 
-  const getTokenOrThrow = useCallback(async () => {
-    const token = await getToken();
-    if (!token) throw new Error("No auth token");
-    return token;
-  }, [getToken]);
+  // ─── Helpers ───
+
+  const getWorkspaceId = useCallback(() => {
+    return useDashboardStore.getState().workspaceScreenMap?.workspaceId ?? null;
+  }, []);
 
   // ─── Workspace resolution ───
 
-  const resolveWorkspace = useCallback(
+  const resolveWorkspaceIdentity = useCallback(
     async (workspaceId?: string) => {
       try {
-        const token = await getTokenOrThrow();
-        const res = await resolveDashboard(token, workspaceId);
+        const res = await resolveDashboard(workspaceId);
 
         if (res.error && res.redirectTo) {
           localStorage.setItem(LAST_VISITED_KEY, res.redirectTo);
@@ -111,9 +108,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
         useDashboardStore.setState({
           activeWorkspace: (res.workspace as Workspace) ?? null,
-          workspaceScreenContent: res.workspaceId
+          workspaceScreenMap: res.workspaceId
             ? {
                 lastFetched: 0,
+                isLoading: false,
                 workspaceId: res.workspaceId,
                 paperIdArray: [],
                 projectIdArray: [],
@@ -125,243 +123,230 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         handleError(e);
         return null;
-      } finally {
-        useDashboardStore.setState({ hydrated: true });
       }
     },
-    [getTokenOrThrow, router, handleError]
+    [router, handleError]
   );
 
   // ─── Screen resolvers ───
 
-  const rootScreen = useCallback(async () => {
-    const sc = useDashboardStore.getState().workspaceScreenContent;
-    if (!sc) return null;
+  const fetchWorkspaceData = useCallback(
+    async (wsId: string) => {
+      const [projects, papers] = await Promise.all([
+        fetchDashboardProjects(wsId),
+        fetchDashboardPapers(wsId),
+      ]);
+      useDashboardStore.getState().upsertToProjects(projects);
+      useDashboardStore.getState().upsertToPapers(papers);
+      return { projects, papers };
+    },
+    []
+  );
+
+  const fetchProjectData = useCallback(
+    async (projectId: string, wsId: string) => {
+      const [collections, papers] = await Promise.all([
+        fetchProjectCollections(projectId, wsId),
+        fetchProjectPapers(projectId, wsId),
+      ]);
+      useDashboardStore.getState().upsertToCollections(collections);
+      useDashboardStore.getState().upsertToPapers(papers);
+      return { collections, papers };
+    },
+    []
+  );
+
+  const fetchCollectionData = useCallback(
+    async (collectionId: string, wsId: string) => {
+      const papers = await fetchCollectionPapers(collectionId, wsId);
+      useDashboardStore.getState().upsertToPapers(papers);
+      return papers;
+    },
+    []
+  );
+
+  const resolveWorkspaceScreen = useCallback(async () => {
+    let wsm = useDashboardStore.getState().workspaceScreenMap;
+    if (!wsm) return null;
+
+    // Skip if already loading
+    if (wsm.isLoading) return null;
 
     const stale =
-      Date.now() - sc.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
+      Date.now() - wsm.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
 
-    // Await fetch if first load
-    if (sc.lastFetched === 0) {
-      const token = await getTokenOrThrow();
+    if (wsm.lastFetched === 0 || stale) {
+      useDashboardStore.setState({
+        workspaceScreenMap: { ...useDashboardStore.getState().workspaceScreenMap!, isLoading: true },
+      });
       try {
-        const [projects, papers] = await Promise.all([
-          fetchDashboardProjects(token, sc.workspaceId),
-          fetchDashboardPapers(token, sc.workspaceId),
-        ]);
-        useDashboardStore.getState().upsertToProjects(projects);
-        useDashboardStore.getState().upsertToPapers(papers);
+        const { projects, papers } = await fetchWorkspaceData(wsm.workspaceId);
         useDashboardStore.setState({
-          workspaceScreenContent: {
-            ...useDashboardStore.getState().workspaceScreenContent!,
+          workspaceScreenMap: {
+            ...useDashboardStore.getState().workspaceScreenMap!,
             lastFetched: Date.now(),
-            paperIdArray: papers.map((p) => p.paperId),
+            isLoading: false,
             projectIdArray: projects.map((p) => p.projectId),
+            paperIdArray: papers.map((p) => p.paperId),
           },
         });
         return { projects, papers };
       } catch (e) {
+        useDashboardStore.setState({
+          workspaceScreenMap: { ...useDashboardStore.getState().workspaceScreenMap!, isLoading: false },
+        });
         handleError(e);
         return null;
       }
     }
 
-    // Stale – fire refresh in background, return stale data
-    if (stale) {
-      try {
-        const token = await getTokenOrThrow();
-        Promise.all([
-          fetchDashboardProjects(token, sc.workspaceId),
-          fetchDashboardPapers(token, sc.workspaceId),
-        ])
-          .then(([projects, papers]) => {
-            useDashboardStore.getState().upsertToProjects(projects);
-            useDashboardStore.getState().upsertToPapers(papers);
-            useDashboardStore.setState({
-              workspaceScreenContent: {
-                ...useDashboardStore.getState().workspaceScreenContent!,
-                lastFetched: Date.now(),
-                paperIdArray: papers.map((p) => p.paperId),
-                projectIdArray: projects.map((p) => p.projectId),
-              },
-            });
-          })
-          .catch(handleError);
-      } catch (e) {
-        handleError(e);
-      }
-    }
-
-    // Return data from store
+    // Data is fresh — return from zustand
     const state = useDashboardStore.getState();
     return {
-      projects: state.projects.filter((p) =>
-        sc.projectIdArray.includes(p.projectId)
-      ),
-      papers: state.papers.filter((p) =>
-        sc.paperIdArray.includes(p.paperId)
-      ),
+      projects: state.projects.filter((p) => wsm.projectIdArray.includes(p.projectId)),
+      papers: state.papers.filter((p) => wsm.paperIdArray.includes(p.paperId)),
     };
-  }, [getTokenOrThrow, handleError]);
+  }, [fetchWorkspaceData, handleError]);
 
-  const projectScreen = useCallback(
+  const resolveProjectScreen = useCallback(
     async (projectId: string) => {
-      const psc = useDashboardStore
+      const wsId = getWorkspaceId();
+      if (!wsId) return null;
+
+      let psm = useDashboardStore
         .getState()
         .projectScreenMap.find((x) => x.projectId === projectId);
-      if (!psc) return null;
+
+      // First load – create entry
+      if (!psm) {
+        useDashboardStore.setState((s) => ({
+          projectScreenMap: [
+            ...s.projectScreenMap,
+            { lastFetched: 0, isLoading: false, projectId, paperIdArray: [], collectionIdArray: [] },
+          ],
+        }));
+        psm = useDashboardStore.getState().projectScreenMap.find((x) => x.projectId === projectId);
+      }
+      if (!psm) return null;
+
+      // Skip if already loading
+      if (psm.isLoading) return null;
 
       const stale =
-        Date.now() - psc.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
+        Date.now() - psm.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
 
-      // Await fetch if first load
-      if (psc.lastFetched === 0) {
-        const wsId =
-          useDashboardStore.getState().workspaceScreenContent?.workspaceId;
-        if (!wsId) return null;
-        const token = await getTokenOrThrow();
+      if (psm.lastFetched === 0 || stale) {
+        useDashboardStore.setState((s) => ({
+          projectScreenMap: s.projectScreenMap.map((x) =>
+            x.projectId === projectId ? { ...x, isLoading: true } : x
+          ),
+        }));
         try {
-          const [collections, papers] = await Promise.all([
-            fetchProjectCollections(token, projectId, wsId),
-            fetchProjectPapers(token, projectId, wsId),
-          ]);
-          useDashboardStore.getState().upsertToCollections(collections);
-          useDashboardStore.getState().upsertToPapers(papers);
+          const { collections, papers } = await fetchProjectData(projectId, wsId);
           useDashboardStore.setState((s) => ({
             projectScreenMap: s.projectScreenMap.map((x) =>
-              x.projectId === projectId ? { ...x, lastFetched: Date.now() } : x
+              x.projectId === projectId
+                ? {
+                    ...x,
+                    lastFetched: Date.now(),
+                    isLoading: false,
+                    collectionIdArray: collections.map((c) => c.collectionId),
+                    paperIdArray: papers.map((p) => p.paperId),
+                  }
+                : x
             ),
           }));
           return { collections, papers };
         } catch (e) {
+          useDashboardStore.setState((s) => ({
+            projectScreenMap: s.projectScreenMap.map((x) =>
+              x.projectId === projectId ? { ...x, isLoading: false } : x
+            ),
+          }));
           handleError(e);
           return null;
         }
       }
 
-      // Stale – fire refresh in background, return stale data
-      if (stale) {
-        try {
-          const wsId =
-            useDashboardStore.getState().workspaceScreenContent?.workspaceId;
-          if (wsId) {
-            const token = await getTokenOrThrow();
-            Promise.all([
-              fetchProjectCollections(token, projectId, wsId),
-              fetchProjectPapers(token, projectId, wsId),
-            ])
-              .then(([collections, papers]) => {
-                useDashboardStore.getState().upsertToCollections(collections);
-                useDashboardStore.getState().upsertToPapers(papers);
-                useDashboardStore.setState((s) => ({
-                  projectScreenMap: s.projectScreenMap.map((x) =>
-                    x.projectId === projectId
-                      ? { ...x, lastFetched: Date.now() }
-                      : x
-                  ),
-                }));
-              })
-              .catch(handleError);
-          }
-        } catch (e) {
-          handleError(e);
-        }
-      }
-
-      // Return data from store
+      // Data is fresh — return from zustand
       const state = useDashboardStore.getState();
       return {
-        collections: state.collections.filter((c) =>
-          psc.collectionIdArray.includes(c.collectionId)
-        ),
-        papers: state.papers.filter((p) =>
-          psc.paperIdArray.includes(p.paperId)
-        ),
+        collections: state.collections.filter((c) => psm.collectionIdArray.includes(c.collectionId)),
+        papers: state.papers.filter((p) => psm.paperIdArray.includes(p.paperId)),
       };
     },
-    [getTokenOrThrow, handleError]
+    [fetchProjectData, getWorkspaceId, handleError]
   );
 
-  const collectionScreen = useCallback(
+  const resolveCollectionScreen = useCallback(
     async (collectionId: string) => {
-      const csc = useDashboardStore
+      const wsId = getWorkspaceId();
+      if (!wsId) return null;
+
+      let csm = useDashboardStore
         .getState()
         .collectionScreenMap.find((x) => x.collectionId === collectionId);
-      if (!csc) return null;
+
+      // First load – create entry
+      if (!csm) {
+        useDashboardStore.setState((s) => ({
+          collectionScreenMap: [
+            ...s.collectionScreenMap,
+            { lastFetched: 0, isLoading: false, collectionId, paperIdArray: [] },
+          ],
+        }));
+        csm = useDashboardStore.getState().collectionScreenMap.find((x) => x.collectionId === collectionId);
+      }
+      if (!csm) return null;
+
+      // Skip if already loading
+      if (csm.isLoading) return null;
 
       const stale =
-        Date.now() - csc.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
+        Date.now() - csm.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
 
-      // Await fetch if first load
-      if (csc.lastFetched === 0) {
-        const wsId =
-          useDashboardStore.getState().workspaceScreenContent?.workspaceId;
-        if (!wsId) return null;
-        const token = await getTokenOrThrow();
+      if (csm.lastFetched === 0 || stale) {
+        useDashboardStore.setState((s) => ({
+          collectionScreenMap: s.collectionScreenMap.map((x) =>
+            x.collectionId === collectionId ? { ...x, isLoading: true } : x
+          ),
+        }));
         try {
-          const papers = await fetchCollectionPapers(
-            token,
-            collectionId,
-            wsId
-          );
-          useDashboardStore.getState().upsertToPapers(papers);
+          const papers = await fetchCollectionData(collectionId, wsId);
           useDashboardStore.setState((s) => ({
             collectionScreenMap: s.collectionScreenMap.map((x) =>
               x.collectionId === collectionId
-                ? { ...x, lastFetched: Date.now() }
+                ? { ...x, lastFetched: Date.now(), isLoading: false, paperIdArray: papers.map((p) => p.paperId) }
                 : x
             ),
           }));
           return papers;
         } catch (e) {
+          useDashboardStore.setState((s) => ({
+            collectionScreenMap: s.collectionScreenMap.map((x) =>
+              x.collectionId === collectionId ? { ...x, isLoading: false } : x
+            ),
+          }));
           handleError(e);
           return null;
         }
       }
 
-      // Stale – fire refresh in background, return stale data
-      if (stale) {
-        try {
-          const wsId =
-            useDashboardStore.getState().workspaceScreenContent?.workspaceId;
-          if (wsId) {
-            const token = await getTokenOrThrow();
-            fetchCollectionPapers(token, collectionId, wsId)
-              .then((papers) => {
-                useDashboardStore.getState().upsertToPapers(papers);
-                useDashboardStore.setState((s) => ({
-                  collectionScreenMap: s.collectionScreenMap.map((x) =>
-                    x.collectionId === collectionId
-                      ? { ...x, lastFetched: Date.now() }
-                      : x
-                  ),
-                }));
-              })
-              .catch(handleError);
-          }
-        } catch (e) {
-          handleError(e);
-        }
-      }
-
-      // Return data from store
-      return useDashboardStore
-        .getState()
-        .papers.filter((p) => csc.paperIdArray.includes(p.paperId));
+      // Data is fresh — return from zustand
+      const state = useDashboardStore.getState();
+      return state.papers.filter((p) => csm.paperIdArray.includes(p.paperId));
     },
-    [getTokenOrThrow, handleError]
+    [fetchCollectionData, getWorkspaceId, handleError]
   );
 
   // ─── Members ───
 
   const loadMembers = useCallback(async () => {
-    const wsId =
-      useDashboardStore.getState().workspaceScreenContent?.workspaceId;
+    const wsId = getWorkspaceId();
     if (!wsId) return;
 
     try {
-      const token = await getTokenOrThrow();
-      const data = await fetchWorkspaceMembers(token, wsId);
+      const data = await fetchWorkspaceMembers(wsId);
       useDashboardStore.setState({
         members: data,
         lastMembersFetch: Date.now(),
@@ -369,21 +354,20 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       handleError(e);
     }
-  }, [getTokenOrThrow, handleError]);
+  }, [getWorkspaceId, handleError]);
 
   // ─── Accessible workspaces ───
 
   const loadAccessibleWorkspaces = useCallback(async () => {
     try {
-      const token = await getTokenOrThrow();
-      const data = await fetchAccessibleWorkspaces(token);
+      const data = await fetchAccessibleWorkspaces();
       useDashboardStore.setState({
         availableWorkspaces: data as unknown as Workspace[],
       });
     } catch (e) {
       handleError(e);
     }
-  }, [getTokenOrThrow, handleError]);
+  }, [handleError]);
 
   // ─── Workspace ID setter ───
 
@@ -391,8 +375,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       useDashboardStore.setState({
         activeWorkspace: null,
-        workspaceScreenContent: {
+        workspaceScreenMap: {
           lastFetched: 0,
+          isLoading: false,
           workspaceId: id,
           paperIdArray: [],
           projectIdArray: [],
@@ -410,34 +395,34 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const screensToRefresh = () => {
       const state = useDashboardStore.getState();
 
-      if (state.workspaceScreenContent) {
-        const wsc = state.workspaceScreenContent;
+      if (state.workspaceScreenMap) {
+        const wsm = state.workspaceScreenMap;
         if (
-          wsc.lastFetched > 0 &&
-          Date.now() - wsc.lastFetched >
+          wsm.lastFetched > 0 &&
+          Date.now() - wsm.lastFetched >
             DASHBOARD_IDLE_REFRESH_SECONDS * 1000
         ) {
-          rootScreen();
+          resolveWorkspaceScreen();
         }
       }
 
-      for (const psc of state.projectScreenMap) {
+      for (const psm of state.projectScreenMap) {
         if (
-          psc.lastFetched > 0 &&
-          Date.now() - psc.lastFetched >
+          psm.lastFetched > 0 &&
+          Date.now() - psm.lastFetched >
             DASHBOARD_IDLE_REFRESH_SECONDS * 1000
         ) {
-          projectScreen(psc.projectId);
+          resolveProjectScreen(psm.projectId);
         }
       }
 
-      for (const csc of state.collectionScreenMap) {
+      for (const csm of state.collectionScreenMap) {
         if (
-          csc.lastFetched > 0 &&
-          Date.now() - csc.lastFetched >
+          csm.lastFetched > 0 &&
+          Date.now() - csm.lastFetched >
             DASHBOARD_IDLE_REFRESH_SECONDS * 1000
         ) {
-          collectionScreen(csc.collectionId);
+          resolveCollectionScreen(csm.collectionId);
         }
       }
     };
@@ -450,7 +435,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     return () => {
       if (checkerTimerRef.current) clearInterval(checkerTimerRef.current);
     };
-  }, [rootScreen, projectScreen, collectionScreen]);
+  }, [resolveWorkspaceScreen, resolveProjectScreen, resolveCollectionScreen]);
 
   // ─── Initialize ───
 
@@ -462,19 +447,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const lastVisited = localStorage.getItem(LAST_VISITED_KEY);
     const initialId = paramId || lastVisited || undefined;
 
-    resolveWorkspace(initialId).then(() => {
-      rootScreen();
+    resolveWorkspaceIdentity(initialId).then(() => {
+      resolveWorkspaceScreen();
       loadAccessibleWorkspaces();
     });
-  }, [searchParams, resolveWorkspace, loadAccessibleWorkspaces, rootScreen]);
+  }, [searchParams, resolveWorkspaceIdentity, loadAccessibleWorkspaces, resolveWorkspaceScreen]);
 
   return (
     <DashboardContext.Provider
       value={{
         setWorkspaceId,
-        rootScreen,
-        projectScreen,
-        collectionScreen,
+        resolveWorkspaceScreen,
+        resolveProjectScreen,
+        resolveCollectionScreen,
         loadMembers,
         loadAccessibleWorkspaces,
       }}
