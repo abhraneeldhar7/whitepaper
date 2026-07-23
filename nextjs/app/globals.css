@@ -22,12 +22,15 @@
   --site-max: 1200px;
   --content-max: 700px;
 
-  --text-xs: 0.7rem;
+  --text-xs: 0.8rem;
   /* 12px - captions, timestamps */
   --text-sm: 0.9rem;
   /* 14px - buttons, UI labels, nav */
   --text-base: 0.95rem;
   /* 16px - body, reading text */
+
+  --text-md: 1.1rem;
+
   --text-lg: 1.25rem;
   /* 20px - card titles, dialog headings */
   --text-xl: 1.6rem;

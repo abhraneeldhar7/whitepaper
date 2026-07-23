@@ -23,6 +23,9 @@ import {
   fetchCollectionPapers,
   fetchWorkspaceMembers,
   fetchAccessibleWorkspaces,
+  fetchProjectById,
+  fetchCollectionById,
+  fetchPaperById,
 } from "@/lib/api/services/dashboard";
 import { resolveDashboard } from "@/lib/api/services/workspace";
 import type { Workspace } from "@/lib/types";
@@ -48,6 +51,9 @@ interface DashboardContextType {
     papers: PaperWithRole[];
   } | null>;
   resolveCollectionScreen: (collectionId: string) => Promise<PaperWithRole[] | null>;
+  getProjectById: (projectId: string) => Promise<ProjectWithRole | null>;
+  getCollectionById: (collectionId: string) => Promise<CollectionWithRole | null>;
+  getPaperById: (paperId: string) => Promise<PaperWithRole | null>;
   loadMembers: () => Promise<void>;
   loadAccessibleWorkspaces: () => Promise<void>;
 }
@@ -339,6 +345,74 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [fetchCollectionData, getWorkspaceId, handleError]
   );
 
+  // ─── Entity lookups ───
+
+  const getProjectById = useCallback(
+    async (projectId: string): Promise<ProjectWithRole | null> => {
+      const wsId = getWorkspaceId();
+      if (!wsId) return null;
+
+      const local = useDashboardStore.getState().getProjectById(projectId);
+      if (local) return local;
+
+      try {
+        const project = await fetchProjectById(projectId, wsId);
+        if (project) {
+          useDashboardStore.getState().upsertToProjects([project]);
+        }
+        return project;
+      } catch (e) {
+        handleError(e);
+        return null;
+      }
+    },
+    [getWorkspaceId, handleError]
+  );
+
+  const getCollectionById = useCallback(
+    async (collectionId: string): Promise<CollectionWithRole | null> => {
+      const wsId = getWorkspaceId();
+      if (!wsId) return null;
+
+      const local = useDashboardStore.getState().getCollectionById(collectionId);
+      if (local) return local;
+
+      try {
+        const collection = await fetchCollectionById(collectionId, wsId);
+        if (collection) {
+          useDashboardStore.getState().upsertToCollections([collection]);
+        }
+        return collection;
+      } catch (e) {
+        handleError(e);
+        return null;
+      }
+    },
+    [getWorkspaceId, handleError]
+  );
+
+  const getPaperById = useCallback(
+    async (paperId: string): Promise<PaperWithRole | null> => {
+      const wsId = getWorkspaceId();
+      if (!wsId) return null;
+
+      const local = useDashboardStore.getState().getPaperById(paperId);
+      if (local) return local;
+
+      try {
+        const paper = await fetchPaperById(paperId, wsId);
+        if (paper) {
+          useDashboardStore.getState().upsertToPapers([paper]);
+        }
+        return paper;
+      } catch (e) {
+        handleError(e);
+        return null;
+      }
+    },
+    [getWorkspaceId, handleError]
+  );
+
   // ─── Members ───
 
   const loadMembers = useCallback(async () => {
@@ -460,6 +534,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         resolveWorkspaceScreen,
         resolveProjectScreen,
         resolveCollectionScreen,
+        getProjectById,
+        getCollectionById,
+        getPaperById,
         loadMembers,
         loadAccessibleWorkspaces,
       }}

@@ -9,6 +9,9 @@ export const PRIVATE = {
   PROJECT_COLLECTIONS: "/private/dashboard/projects",
   PROJECT_PAPERS: "/private/dashboard/projects",
   COLLECTION_PAPERS: "/private/dashboard/collections",
+  PROJECT_BY_ID: "/private/dashboard/projects",
+  COLLECTION_BY_ID: "/private/dashboard/collections",
+  PAPER_BY_ID: "/private/dashboard/papers",
 } as const;
 
 export const PUBLIC = {} as const;

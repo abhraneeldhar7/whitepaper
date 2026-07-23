@@ -84,3 +84,33 @@ export function fetchAccessibleWorkspaces(
     PRIVATE.DASHBOARD_WORKSPACES
   );
 }
+
+export function fetchProjectById(
+  projectId: string,
+  workspaceId: string,
+  client: ApiClient = apiClient,
+): Promise<ProjectWithRole | null> {
+  return client.get<ProjectWithRole | null>(
+    `${PRIVATE.PROJECT_BY_ID}/${projectId}?workspaceId=${workspaceId}`
+  );
+}
+
+export function fetchCollectionById(
+  collectionId: string,
+  workspaceId: string,
+  client: ApiClient = apiClient,
+): Promise<CollectionWithRole | null> {
+  return client.get<CollectionWithRole | null>(
+    `${PRIVATE.COLLECTION_BY_ID}/${collectionId}?workspaceId=${workspaceId}`
+  );
+}
+
+export function fetchPaperById(
+  paperId: string,
+  workspaceId: string,
+  client: ApiClient = apiClient,
+): Promise<PaperWithRole | null> {
+  return client.get<PaperWithRole | null>(
+    `${PRIVATE.PAPER_BY_ID}/${paperId}?workspaceId=${workspaceId}`
+  );
+}

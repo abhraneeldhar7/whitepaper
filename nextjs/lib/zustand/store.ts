@@ -32,12 +32,15 @@ interface CollectionScreenMap {
 interface DashboardState {
   activeWorkspace: Workspace | null;
   availableWorkspaces: Workspace[];
+
   workspaceScreenMap: WorkspaceScreenMap | null;
   projectScreenMap: ProjectScreenMap[];
   collectionScreenMap: CollectionScreenMap[];
+
   papers: PaperWithRole[];
   projects: ProjectWithRole[];
   collections: CollectionWithRole[];
+  
   members: MemberWithUser[];
   lastMembersFetch: number;
 
@@ -52,9 +55,13 @@ interface DashboardState {
   updateInProjects: (projectId: string, data: Partial<ProjectWithRole>) => void;
   updateInCollections: (collectionId: string, data: Partial<CollectionWithRole>) => void;
   updateInPapers: (paperId: string, data: Partial<PaperWithRole>) => void;
+
+  getProjectById: (projectId: string) => ProjectWithRole | undefined;
+  getCollectionById: (collectionId: string) => CollectionWithRole | undefined;
+  getPaperById: (paperId: string) => PaperWithRole | undefined;
 }
 
-export const useDashboardStore = create<DashboardState>((set) => ({
+export const useDashboardStore = create<DashboardState>((set, get) => ({
   activeWorkspace: null,
   availableWorkspaces: [],
   workspaceScreenMap: null,
@@ -158,4 +165,13 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         p.paperId === paperId ? { ...p, ...data } : p
       ),
     })),
+
+  getProjectById: (projectId) =>
+    get().projects.find((p) => p.projectId === projectId),
+
+  getCollectionById: (collectionId) =>
+    get().collections.find((c) => c.collectionId === collectionId),
+
+  getPaperById: (paperId) =>
+    get().papers.find((p) => p.paperId === paperId),
 }));
