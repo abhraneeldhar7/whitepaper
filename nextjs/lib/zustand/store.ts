@@ -31,6 +31,7 @@ interface CollectionScreenMap {
 
 interface DashboardState {
   activeWorkspace: Workspace | null;
+  isLoadingActiveWorkspace: boolean;
   availableWorkspaces: Workspace[];
 
   workspaceScreenMap: WorkspaceScreenMap | null;
@@ -63,6 +64,7 @@ interface DashboardState {
 
 export const useDashboardStore = create<DashboardState>((set, get) => ({
   activeWorkspace: null,
+  isLoadingActiveWorkspace: true,
   availableWorkspaces: [],
   workspaceScreenMap: null,
   projectScreenMap: [],

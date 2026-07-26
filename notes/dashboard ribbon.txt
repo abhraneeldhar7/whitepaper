@@ -1,0 +1,44 @@
+theres a lot fuckshit going on in workspace-ribbon-button and how its used.
+whatever im saying implement from scratch to the dot, dont assume anything. read agents.md
+
+fundamental workspace ribbon button restructure:
+use Select shadcn component as the popover thing. not shadcn popover.
+takes input an imageUrl and the entity obejct and entity type.
+in there make a <ContainerLogo> component like done in userPopover to show the logo or the first letter things, export that too.
+and show name right side to it.
+
+
+---
+
+/dashboard: worksapce selector
+needed: activeWorkspace, availableWorkspaces
+how to get:
+dashboard provider is supposed to resolve current workspace always no matter the screen.
+this indivisual workspace selector component itself should make the call to fetch and store the available wokrspaces. it can be in dashboard provider or just a workspace.ts service function, whichever is suitable, this user will click not very often so this should not block the main things. also here if you dont fucking over engineer, it should have all the available workspaces, including the active one, thats exactly what we need, dont fucking over engineer anything.
+while its being loaded, put disable prop in the dropdown.
+
+---
+
+/dashboard/[project-id]: project selector.
+how to get: the active project thats fetched, its to be shown in trigger same as every button. and then inside it the other siblings. to get siblings, call the resolveWorkspaceScreen function and it will take care of local data and refresh itself.
+same, while its being loaded, put disable prop in the dropdown.
+
+---
+
+/dashboard/[project-id]/[collection-id]: collection selector.
+same shit. use resolveProjectScreen to get the siblings.
+
+-------
+
+and for projects and collection ribbons too, parent object is needed. use the activeWorkspace from dashboard provider for ws and getProjectById for collection.
+
+each page.tsx of the dashboards above the <DashboardContent> there can be the required ribbon buttons, no need to have one single ribbon component or reused.
+
+render these:
+main dashboard: workspace selector
+project dash: workspace logo (use ContainerLogo from before), chevron right, project selector.
+collection dash: project logo  (use ContainerLogo from before), chevron right, collection selector.
+
+for each selector, filter out at .map render time the active entity.
+
+and right side of each screen the userpopover comp.

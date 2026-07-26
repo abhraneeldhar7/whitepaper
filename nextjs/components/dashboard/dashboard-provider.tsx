@@ -5,542 +5,280 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   type ReactNode,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useSelectedLayoutSegments } from "next/navigation";
 import { toast } from "sonner";
+import { LAST_VISITED_WORKSPACEID_KEY, DASHBOARD_IDLE_REFRESH_SECONDS } from "@/lib/constants";
 import {
-  DASHBOARD_IDLE_REFRESH_SECONDS,
-  LAST_VISITED_KEY,
-  AUTO_REFRESH_CHECKER_TICK_SECONDS,
-} from "@/lib/constants";
-import {
-  fetchDashboardProjects,
-  fetchDashboardPapers,
-  fetchProjectCollections,
-  fetchProjectPapers,
-  fetchCollectionPapers,
-  fetchWorkspaceMembers,
-  fetchAccessibleWorkspaces,
-  fetchProjectById,
-  fetchCollectionById,
-  fetchPaperById,
-} from "@/lib/api/services/dashboard";
-import { resolveDashboard } from "@/lib/api/services/workspace";
-import type { Workspace } from "@/lib/types";
-import type {
-  ProjectWithRole,
-  CollectionWithRole,
-  PaperWithRole,
-} from "@/lib/api/services/dashboard";
+  resolveActiveWorkspace,
+  fetchWorkspaceScreen,
+  type WorkspaceScreenData,
+} from "@/lib/api/services/workspace";
+import { fetchProjectScreen, type ProjectScreenData, type ProjectWithRole, type CollectionWithRole, fetchProjectById } from "@/lib/api/services/projects";
+import { fetchCollectionScreen, fetchCollectionById } from "@/lib/api/services/collections";
+import { fetchPaperById, type PaperWithRole } from "@/lib/api/services/papers";
+import { ApiError } from "@/lib/api/api-client";
 import { useDashboardStore } from "@/lib/zustand/store";
 
 export { useDashboardStore };
 
 interface DashboardContextType {
-  setWorkspaceId: (id: string) => void;
-  resolveWorkspaceScreen: () => Promise<{
-    projects: ProjectWithRole[];
-    papers: PaperWithRole[];
-  } | null>;
-  resolveProjectScreen: (
-    projectId: string
-  ) => Promise<{
-    collections: CollectionWithRole[];
-    papers: PaperWithRole[];
-  } | null>;
-  resolveCollectionScreen: (collectionId: string) => Promise<PaperWithRole[] | null>;
+  setWorkspaceId: (id: string) => Promise<void>;
+  resolveWorkspaceScreen: () => Promise<WorkspaceScreenData | undefined>;
+  resolveProjectScreen: (projectId: string) => Promise<ProjectScreenData | undefined>;
+  resolveCollectionScreen: (collectionId: string) => Promise<PaperWithRole[] | undefined>;
   getProjectById: (projectId: string) => Promise<ProjectWithRole | null>;
   getCollectionById: (collectionId: string) => Promise<CollectionWithRole | null>;
   getPaperById: (paperId: string) => Promise<PaperWithRole | null>;
-  loadMembers: () => Promise<void>;
-  loadAccessibleWorkspaces: () => Promise<void>;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(
-  undefined
-);
+const DashboardContext = createContext<DashboardContextType | null>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initializedRef = useRef(false);
-  const checkerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const handleError = useCallback(
-    (e: unknown) => {
-      if (e instanceof Error) {
-        const msg = e.message;
-        if (msg.includes("401") || msg.includes("403")) {
-          router.push("/dashboard");
-          return;
-        }
-      }
-      toast.error("You are offline");
-    },
-    [router]
-  );
-
-  // ─── Helpers ───
-
-  const getWorkspaceId = useCallback(() => {
-    return useDashboardStore.getState().workspaceScreenMap?.workspaceId ?? null;
-  }, []);
-
-  // ─── Workspace resolution ───
+  const segments = useSelectedLayoutSegments();
 
   const resolveWorkspaceIdentity = useCallback(
-    async (workspaceId?: string) => {
+    async (params: { workspaceId?: string; projectId?: string; collectionId?: string; lastVisitedWorkspaceId?: string }) => {
       try {
-        const res = await resolveDashboard(workspaceId);
+        useDashboardStore.setState({ isLoadingActiveWorkspace: true });
 
-        if (res.error && res.redirectTo) {
-          localStorage.setItem(LAST_VISITED_KEY, res.redirectTo);
-          setTimeout(() => {
-            router.push(`/dashboard?workspaceId=${res.redirectTo}`);
-          }, 2000);
-          return null;
-        }
+        const res = await resolveActiveWorkspace(params);
 
-        if (res.error) {
-          toast.error(res.error);
-          return null;
-        }
+        localStorage.setItem(LAST_VISITED_WORKSPACEID_KEY, res.workspaceId);
 
-        if (res.workspaceId) {
-          localStorage.setItem(LAST_VISITED_KEY, res.workspaceId);
-        }
+        useDashboardStore.setState({ activeWorkspace: res });
 
-        useDashboardStore.setState({
-          activeWorkspace: (res.workspace as Workspace) ?? null,
-          workspaceScreenMap: res.workspaceId
-            ? {
-                lastFetched: 0,
-                isLoading: false,
-                workspaceId: res.workspaceId,
-                paperIdArray: [],
-                projectIdArray: [],
-              }
-            : null,
-        });
-
-        return res.workspaceId ?? null;
+        return res.workspaceId;
       } catch (e) {
-        handleError(e);
+        if (e instanceof ApiError) {
+          const msg = JSON.parse(e.message)?.detail;
+
+          if (msg === "no_workspace_available") {
+            return null;
+          }
+
+          if (e.status === 401 || e.status === 404) {
+            router.push("/dashboard");
+            return null;
+          }
+
+          toast.error(e.message);
+        } else {
+          toast.error("You are offline");
+        }
         return null;
       }
-    },
-    [router, handleError]
-  );
-
-  // ─── Screen resolvers ───
-
-  const fetchWorkspaceData = useCallback(
-    async (wsId: string) => {
-      const [projects, papers] = await Promise.all([
-        fetchDashboardProjects(wsId),
-        fetchDashboardPapers(wsId),
-      ]);
-      useDashboardStore.getState().upsertToProjects(projects);
-      useDashboardStore.getState().upsertToPapers(papers);
-      return { projects, papers };
-    },
-    []
-  );
-
-  const fetchProjectData = useCallback(
-    async (projectId: string, wsId: string) => {
-      const [collections, papers] = await Promise.all([
-        fetchProjectCollections(projectId, wsId),
-        fetchProjectPapers(projectId, wsId),
-      ]);
-      useDashboardStore.getState().upsertToCollections(collections);
-      useDashboardStore.getState().upsertToPapers(papers);
-      return { collections, papers };
-    },
-    []
-  );
-
-  const fetchCollectionData = useCallback(
-    async (collectionId: string, wsId: string) => {
-      const papers = await fetchCollectionPapers(collectionId, wsId);
-      useDashboardStore.getState().upsertToPapers(papers);
-      return papers;
-    },
-    []
-  );
-
-  const resolveWorkspaceScreen = useCallback(async () => {
-    let wsm = useDashboardStore.getState().workspaceScreenMap;
-    if (!wsm) return null;
-
-    // Skip if already loading
-    if (wsm.isLoading) return null;
-
-    const stale =
-      Date.now() - wsm.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
-
-    if (wsm.lastFetched === 0 || stale) {
-      useDashboardStore.setState({
-        workspaceScreenMap: { ...useDashboardStore.getState().workspaceScreenMap!, isLoading: true },
-      });
-      try {
-        const { projects, papers } = await fetchWorkspaceData(wsm.workspaceId);
-        useDashboardStore.setState({
-          workspaceScreenMap: {
-            ...useDashboardStore.getState().workspaceScreenMap!,
-            lastFetched: Date.now(),
-            isLoading: false,
-            projectIdArray: projects.map((p) => p.projectId),
-            paperIdArray: papers.map((p) => p.paperId),
-          },
-        });
-        return { projects, papers };
-      } catch (e) {
-        useDashboardStore.setState({
-          workspaceScreenMap: { ...useDashboardStore.getState().workspaceScreenMap!, isLoading: false },
-        });
-        handleError(e);
-        return null;
+      finally {
+        useDashboardStore.setState({ isLoadingActiveWorkspace: false });
       }
-    }
+    },
+    [router],
+  );
 
-    // Data is fresh — return from zustand
-    const state = useDashboardStore.getState();
-    return {
-      projects: state.projects.filter((p) => wsm.projectIdArray.includes(p.projectId)),
-      papers: state.papers.filter((p) => wsm.paperIdArray.includes(p.paperId)),
-    };
-  }, [fetchWorkspaceData, handleError]);
+  async function resolveWorkspaceScreen(): Promise<WorkspaceScreenData | undefined> {
+    const workspaceId = useDashboardStore.getState().activeWorkspace?.workspaceId;
+    if (!workspaceId) return undefined;
 
-  const resolveProjectScreen = useCallback(
-    async (projectId: string) => {
-      const wsId = getWorkspaceId();
-      if (!wsId) return null;
-
-      let psm = useDashboardStore
-        .getState()
-        .projectScreenMap.find((x) => x.projectId === projectId);
-
-      // First load – create entry
-      if (!psm) {
-        useDashboardStore.setState((s) => ({
-          projectScreenMap: [
-            ...s.projectScreenMap,
-            { lastFetched: 0, isLoading: false, projectId, paperIdArray: [], collectionIdArray: [] },
-          ],
-        }));
-        psm = useDashboardStore.getState().projectScreenMap.find((x) => x.projectId === projectId);
-      }
-      if (!psm) return null;
-
-      // Skip if already loading
-      if (psm.isLoading) return null;
-
-      const stale =
-        Date.now() - psm.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
-
-      if (psm.lastFetched === 0 || stale) {
-        useDashboardStore.setState((s) => ({
-          projectScreenMap: s.projectScreenMap.map((x) =>
-            x.projectId === projectId ? { ...x, isLoading: true } : x
-          ),
-        }));
-        try {
-          const { collections, papers } = await fetchProjectData(projectId, wsId);
-          useDashboardStore.setState((s) => ({
-            projectScreenMap: s.projectScreenMap.map((x) =>
-              x.projectId === projectId
-                ? {
-                    ...x,
-                    lastFetched: Date.now(),
-                    isLoading: false,
-                    collectionIdArray: collections.map((c) => c.collectionId),
-                    paperIdArray: papers.map((p) => p.paperId),
-                  }
-                : x
-            ),
-          }));
-          return { collections, papers };
-        } catch (e) {
-          useDashboardStore.setState((s) => ({
-            projectScreenMap: s.projectScreenMap.map((x) =>
-              x.projectId === projectId ? { ...x, isLoading: false } : x
-            ),
-          }));
-          handleError(e);
-          return null;
-        }
-      }
-
-      // Data is fresh — return from zustand
-      const state = useDashboardStore.getState();
+    const existing = useDashboardStore.getState().workspaceScreenMap;
+    if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
+      const { projects, papers } = useDashboardStore.getState();
       return {
-        collections: state.collections.filter((c) => psm.collectionIdArray.includes(c.collectionId)),
-        papers: state.papers.filter((p) => psm.paperIdArray.includes(p.paperId)),
+        projects: projects.filter((p) => existing.projectIdArray.includes(p.projectId)),
+        papers: papers.filter((p) => existing.paperIdArray.includes(p.paperId)),
       };
-    },
-    [fetchProjectData, getWorkspaceId, handleError]
-  );
+    }
 
-  const resolveCollectionScreen = useCallback(
-    async (collectionId: string) => {
-      const wsId = getWorkspaceId();
-      if (!wsId) return null;
+    useDashboardStore.setState((s) => ({
+      workspaceScreenMap: s.workspaceScreenMap
+        ? { ...s.workspaceScreenMap, isLoading: true }
+        : { lastFetched: 0, isLoading: true, workspaceId, projectIdArray: [], paperIdArray: [] },
+    }));
 
-      let csm = useDashboardStore
-        .getState()
-        .collectionScreenMap.find((x) => x.collectionId === collectionId);
+    const data = await fetchWorkspaceScreen(workspaceId);
 
-      // First load – create entry
-      if (!csm) {
-        useDashboardStore.setState((s) => ({
-          collectionScreenMap: [
-            ...s.collectionScreenMap,
-            { lastFetched: 0, isLoading: false, collectionId, paperIdArray: [] },
+    useDashboardStore.getState().upsertToProjects(data.projects);
+    useDashboardStore.getState().upsertToPapers(data.papers);
+
+    useDashboardStore.setState({
+      workspaceScreenMap: {
+        lastFetched: Date.now(),
+        isLoading: false,
+        workspaceId,
+        projectIdArray: data.projects.map((p) => p.projectId),
+        paperIdArray: data.papers.map((p) => p.paperId),
+      },
+    });
+
+    return data;
+  }
+
+  async function resolveProjectScreen(projectId: string): Promise<ProjectScreenData | undefined> {
+    const maps = useDashboardStore.getState().projectScreenMap;
+    const existing = maps.find((psc) => psc.projectId === projectId);
+    if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
+      const { collections, papers } = useDashboardStore.getState();
+      return {
+        collections: collections.filter((c) => existing.collectionIdArray.includes(c.collectionId)),
+        papers: papers.filter((p) => existing.paperIdArray.includes(p.paperId)),
+      };
+    }
+
+    useDashboardStore.setState((s) => ({
+      projectScreenMap: existing
+        ? s.projectScreenMap.map((psc) =>
+            psc.projectId === projectId ? { ...psc, isLoading: true } : psc
+          )
+        : [
+            ...s.projectScreenMap,
+            {
+              lastFetched: 0,
+              isLoading: true,
+              projectId,
+              collectionIdArray: [],
+              paperIdArray: [],
+            },
           ],
-        }));
-        csm = useDashboardStore.getState().collectionScreenMap.find((x) => x.collectionId === collectionId);
-      }
-      if (!csm) return null;
+    }));
 
-      // Skip if already loading
-      if (csm.isLoading) return null;
+    const data = await fetchProjectScreen(projectId);
 
-      const stale =
-        Date.now() - csm.lastFetched > DASHBOARD_IDLE_REFRESH_SECONDS * 1000;
+    useDashboardStore.getState().upsertToCollections(data.collections);
+    useDashboardStore.getState().upsertToPapers(data.papers);
 
-      if (csm.lastFetched === 0 || stale) {
-        useDashboardStore.setState((s) => ({
-          collectionScreenMap: s.collectionScreenMap.map((x) =>
-            x.collectionId === collectionId ? { ...x, isLoading: true } : x
-          ),
-        }));
-        try {
-          const papers = await fetchCollectionData(collectionId, wsId);
-          useDashboardStore.setState((s) => ({
-            collectionScreenMap: s.collectionScreenMap.map((x) =>
-              x.collectionId === collectionId
-                ? { ...x, lastFetched: Date.now(), isLoading: false, paperIdArray: papers.map((p) => p.paperId) }
-                : x
-            ),
-          }));
-          return papers;
-        } catch (e) {
-          useDashboardStore.setState((s) => ({
-            collectionScreenMap: s.collectionScreenMap.map((x) =>
-              x.collectionId === collectionId ? { ...x, isLoading: false } : x
-            ),
-          }));
-          handleError(e);
-          return null;
-        }
-      }
+    useDashboardStore.setState({
+      projectScreenMap: [
+        ...useDashboardStore.getState().projectScreenMap.filter((psc) => psc.projectId !== projectId),
+        {
+          lastFetched: Date.now(),
+          isLoading: false,
+          projectId,
+          collectionIdArray: data.collections.map((c) => c.collectionId),
+          paperIdArray: data.papers.map((p) => p.paperId),
+        },
+      ],
+    });
 
-      // Data is fresh — return from zustand
-      const state = useDashboardStore.getState();
-      return state.papers.filter((p) => csm.paperIdArray.includes(p.paperId));
-    },
-    [fetchCollectionData, getWorkspaceId, handleError]
-  );
+    return data;
+  }
 
-  // ─── Entity lookups ───
-
-  const getProjectById = useCallback(
-    async (projectId: string): Promise<ProjectWithRole | null> => {
-      const wsId = getWorkspaceId();
-      if (!wsId) return null;
-
-      const local = useDashboardStore.getState().getProjectById(projectId);
-      if (local) return local;
-
-      try {
-        const project = await fetchProjectById(projectId, wsId);
-        if (project) {
-          useDashboardStore.getState().upsertToProjects([project]);
-        }
-        return project;
-      } catch (e) {
-        handleError(e);
-        return null;
-      }
-    },
-    [getWorkspaceId, handleError]
-  );
-
-  const getCollectionById = useCallback(
-    async (collectionId: string): Promise<CollectionWithRole | null> => {
-      const wsId = getWorkspaceId();
-      if (!wsId) return null;
-
-      const local = useDashboardStore.getState().getCollectionById(collectionId);
-      if (local) return local;
-
-      try {
-        const collection = await fetchCollectionById(collectionId, wsId);
-        if (collection) {
-          useDashboardStore.getState().upsertToCollections([collection]);
-        }
-        return collection;
-      } catch (e) {
-        handleError(e);
-        return null;
-      }
-    },
-    [getWorkspaceId, handleError]
-  );
-
-  const getPaperById = useCallback(
-    async (paperId: string): Promise<PaperWithRole | null> => {
-      const wsId = getWorkspaceId();
-      if (!wsId) return null;
-
-      const local = useDashboardStore.getState().getPaperById(paperId);
-      if (local) return local;
-
-      try {
-        const paper = await fetchPaperById(paperId, wsId);
-        if (paper) {
-          useDashboardStore.getState().upsertToPapers([paper]);
-        }
-        return paper;
-      } catch (e) {
-        handleError(e);
-        return null;
-      }
-    },
-    [getWorkspaceId, handleError]
-  );
-
-  // ─── Members ───
-
-  const loadMembers = useCallback(async () => {
-    const wsId = getWorkspaceId();
-    if (!wsId) return;
-
-    try {
-      const data = await fetchWorkspaceMembers(wsId);
-      useDashboardStore.setState({
-        members: data,
-        lastMembersFetch: Date.now(),
-      });
-    } catch (e) {
-      handleError(e);
+  async function resolveCollectionScreen(collectionId: string): Promise<PaperWithRole[] | undefined> {
+    const maps = useDashboardStore.getState().collectionScreenMap;
+    const existing = maps.find((csc) => csc.collectionId === collectionId);
+    if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
+      const { papers } = useDashboardStore.getState();
+      return papers.filter((p) => existing.paperIdArray.includes(p.paperId));
     }
-  }, [getWorkspaceId, handleError]);
 
-  // ─── Accessible workspaces ───
+    useDashboardStore.setState((s) => ({
+      collectionScreenMap: existing
+        ? s.collectionScreenMap.map((csc) =>
+            csc.collectionId === collectionId ? { ...csc, isLoading: true } : csc
+          )
+        : [
+            ...s.collectionScreenMap,
+            {
+              lastFetched: 0,
+              isLoading: true,
+              collectionId,
+              paperIdArray: [],
+            },
+          ],
+    }));
 
-  const loadAccessibleWorkspaces = useCallback(async () => {
-    try {
-      const data = await fetchAccessibleWorkspaces();
-      useDashboardStore.setState({
-        availableWorkspaces: data as unknown as Workspace[],
-      });
-    } catch (e) {
-      handleError(e);
-    }
-  }, [handleError]);
+    const data = await fetchCollectionScreen(collectionId);
 
-  // ─── Workspace ID setter ───
+    useDashboardStore.getState().upsertToPapers(data.papers);
+
+    useDashboardStore.setState({
+      collectionScreenMap: [
+        ...useDashboardStore.getState().collectionScreenMap.filter(
+          (csc) => csc.collectionId !== collectionId,
+        ),
+        {
+          lastFetched: Date.now(),
+          isLoading: false,
+          collectionId,
+          paperIdArray: data.papers.map((p) => p.paperId),
+        },
+      ],
+    });
+
+    return data.papers;
+  }
+
+  async function getProjectById(projectId: string): Promise<ProjectWithRole | null> {
+    const cached = useDashboardStore.getState().getProjectById(projectId);
+    if (cached) return cached;
+
+    const result = await fetchProjectById(projectId);
+    if (result) useDashboardStore.getState().upsertToProjects([result]);
+    return result;
+  }
+
+  async function getCollectionById(collectionId: string): Promise<CollectionWithRole | null> {
+    const cached = useDashboardStore.getState().getCollectionById(collectionId);
+    if (cached) return cached;
+
+    const result = await fetchCollectionById(collectionId);
+    if (result) useDashboardStore.getState().upsertToCollections([result]);
+    return result;
+  }
+
+  async function getPaperById(paperId: string): Promise<PaperWithRole | null> {
+    const cached = useDashboardStore.getState().getPaperById(paperId);
+    if (cached) return cached;
+
+    const result = await fetchPaperById(paperId);
+    if (result) useDashboardStore.getState().upsertToPapers([result]);
+    return result;
+  }
 
   const setWorkspaceId = useCallback(
-    (id: string) => {
-      useDashboardStore.setState({
-        activeWorkspace: null,
-        workspaceScreenMap: {
-          lastFetched: 0,
-          isLoading: false,
-          workspaceId: id,
-          paperIdArray: [],
-          projectIdArray: [],
-        },
-      });
-      localStorage.setItem(LAST_VISITED_KEY, id);
-      router.push(`/dashboard?workspaceId=${id}`);
+    async (id: string) => {
+      localStorage.setItem(LAST_VISITED_WORKSPACEID_KEY, id);
+      const result = await resolveWorkspaceIdentity({ workspaceId: id });
+      if (result) router.push("/dashboard");
     },
-    [router]
+    [router, resolveWorkspaceIdentity],
   );
 
-  // ─── Auto-refresh checker ───
-
   useEffect(() => {
-    const screensToRefresh = () => {
-      const state = useDashboardStore.getState();
+    const queryParamWsId = searchParams.get("workspaceId");
+    const lastVisitedWorkspaceId = localStorage.getItem(LAST_VISITED_WORKSPACEID_KEY);
 
-      if (state.workspaceScreenMap) {
-        const wsm = state.workspaceScreenMap;
-        if (
-          wsm.lastFetched > 0 &&
-          Date.now() - wsm.lastFetched >
-            DASHBOARD_IDLE_REFRESH_SECONDS * 1000
-        ) {
-          resolveWorkspaceScreen();
-        }
-      }
+    const resolveParams: { workspaceId?: string; projectId?: string; collectionId?: string; lastVisitedWorkspaceId?: string } = {};
 
-      for (const psm of state.projectScreenMap) {
-        if (
-          psm.lastFetched > 0 &&
-          Date.now() - psm.lastFetched >
-            DASHBOARD_IDLE_REFRESH_SECONDS * 1000
-        ) {
-          resolveProjectScreen(psm.projectId);
-        }
-      }
+    if (segments[1]) {
+      resolveParams.collectionId = segments[1];
+      resolveParams.projectId = segments[0];
+    } else if (segments[0]) {
+      resolveParams.projectId = segments[0];
+    }
 
-      for (const csm of state.collectionScreenMap) {
-        if (
-          csm.lastFetched > 0 &&
-          Date.now() - csm.lastFetched >
-            DASHBOARD_IDLE_REFRESH_SECONDS * 1000
-        ) {
-          resolveCollectionScreen(csm.collectionId);
-        }
-      }
-    };
+    if (queryParamWsId) {
+      resolveParams.workspaceId = queryParamWsId;
+    }
 
-    checkerTimerRef.current = setInterval(
-      screensToRefresh,
-      AUTO_REFRESH_CHECKER_TICK_SECONDS * 1000
-    );
+    if (lastVisitedWorkspaceId) {
+      resolveParams.lastVisitedWorkspaceId = lastVisitedWorkspaceId;
+    }
 
-    return () => {
-      if (checkerTimerRef.current) clearInterval(checkerTimerRef.current);
-    };
-  }, [resolveWorkspaceScreen, resolveProjectScreen, resolveCollectionScreen]);
-
-  // ─── Initialize ───
-
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
-    const paramId = searchParams.get("workspaceId");
-    const lastVisited = localStorage.getItem(LAST_VISITED_KEY);
-    const initialId = paramId || lastVisited || undefined;
-
-    resolveWorkspaceIdentity(initialId).then(() => {
-      resolveWorkspaceScreen();
-      loadAccessibleWorkspaces();
-    });
-  }, [searchParams, resolveWorkspaceIdentity, loadAccessibleWorkspaces, resolveWorkspaceScreen]);
+    resolveWorkspaceIdentity(resolveParams);
+  }, [segments, searchParams, resolveWorkspaceIdentity]);
 
   return (
-    <DashboardContext.Provider
-      value={{
-        setWorkspaceId,
-        resolveWorkspaceScreen,
-        resolveProjectScreen,
-        resolveCollectionScreen,
-        getProjectById,
-        getCollectionById,
-        getPaperById,
-        loadMembers,
-        loadAccessibleWorkspaces,
-      }}
-    >
+    <DashboardContext.Provider value={{
+      setWorkspaceId,
+      resolveWorkspaceScreen,
+      resolveProjectScreen,
+      resolveCollectionScreen,
+      getProjectById,
+      getCollectionById,
+      getPaperById,
+    }}>
       {children}
     </DashboardContext.Provider>
   );
@@ -548,7 +286,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
 export function useDashboard() {
   const context = useContext(DashboardContext);
-  if (!context)
-    throw new Error("useDashboard must be used within DashboardProvider");
+  if (!context) throw new Error("useDashboard must be used within DashboardProvider");
   return context;
 }

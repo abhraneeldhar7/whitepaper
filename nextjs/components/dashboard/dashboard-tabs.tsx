@@ -37,6 +37,7 @@ export default function DashboardTabs({ tabs, onTabChange }: DashboardTabsProps)
       {tabs.map((tab) => (
         <Button
           key={tab}
+          className="border-0"
           variant={currentTab === normalize(tab) ? "secondary" : "ghost"}
           size="sm"
           onClick={() => handleClick(tab)}

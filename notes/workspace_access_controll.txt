@@ -1,5 +1,3 @@
-when in /dashboard without workspaceId specified in query params.
-
 1. selection of workspaceId:
 - Check if user has a "lastVisitedWorkspaceId" stored in Local storage. 
 - If no last visited workspace → Query entity_members table where userId = currentUser, role = "owner" (oldest joined), entityType=workspace, only select the oldest entry. that workspaceId is selected.

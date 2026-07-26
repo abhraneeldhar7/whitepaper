@@ -24,9 +24,14 @@ class User(SQLModel, table=True):
 # ── Clerk custom claims (NOT a table) ──
 
 class ClerkUserRole(SQLModel):
-    role: str
+    workspaceId: str
     entityId: str
+    userId: str
     entityType: str
+    role: str
+    grantedAt: str
+    grantedBySystem: bool
+    grantedById: Optional[str] = None
 
 
 # ── Workspace ──

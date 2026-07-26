@@ -18,7 +18,7 @@ from app.services.user_service import (
     get_user_by_id,
     username_exists,
 )
-from app.services.workspace_service import (
+from app.services.workspace import (
     create_personal_workspace,
     workspace_slug_exists,
 )

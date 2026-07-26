@@ -3,13 +3,15 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
 
 from app.services.access_control import (
     get_entity_members,
-    get_oldest_owned_workspace,
     get_any_accessible_workspace,
     has_workspace_access,
 )
+from app.services.collection import get_collection_by_id
+from app.services.project import get_project_by_id
 from app.shared.schema import (
     Collection,
     EntityMembers,
@@ -28,6 +30,16 @@ from app.utils.helpers import now
 async def workspace_slug_exists(db: AsyncSession, slug: str) -> bool:
     result = await db.execute(select(Workspace).where(Workspace.workspaceSlug == slug))
     return result.scalar_one_or_none() is not None
+
+
+async def get_workspace_by_id(
+    db: AsyncSession,
+    workspaceId: str,
+) -> Workspace | None:
+    result = await db.execute(
+        select(Workspace).where(Workspace.workspaceId == workspaceId)
+    )
+    return result.scalar_one_or_none()
 
 
 async def create_personal_workspace(
@@ -49,6 +61,19 @@ async def create_personal_workspace(
     )
     db.add(workspace)
     return workspace
+
+
+async def get_oldest_owned_workspace(
+    db: AsyncSession, userId: str
+) -> str | None:
+    result = await db.execute(
+        select(EntityMembers.workspaceId).where(
+            EntityMembers.userId == userId,
+            EntityMembers.entityType == EntityType.workspace,
+            EntityMembers.role == MemberRole.owner,
+        ).order_by(EntityMembers.grantedAt.asc()).limit(1)
+    )
+    return result.scalar_one_or_none()
 
 
 @dataclass
@@ -174,13 +199,13 @@ async def _load_workspace_data(
 async def resolve_dashboard(
     db: AsyncSession,
     userId: str,
-    requested_workspace_id: str | None,
+    workspace_id: str | None,
 ) -> dict:
     """
     Single entry point for the /dashboard screen.
 
     Algorithm:
-    1. If requested_workspace_id provided → use it (no questions asked per spec)
+    1. If workspace_id provided → use it (no questions asked per spec)
     2. If not → caller should have sent lastVisitedWorkspaceId from localStorage
        (we just receive whatever they send)
     3. Check access to selected workspaceId
@@ -222,12 +247,9 @@ async def resolve_dashboard(
             return {"error": "No workspaces available for this account"}
 
     # --- Step 4: Fetch workspace + data ---
-    workspace_result = await db.execute(
-        select(Workspace).where(Workspace.workspaceId == selected_id)
-    )
-    workspace = workspace_result.scalar_one_or_none()
+    workspace = await get_workspace_by_id(db, selected_id)
     if not workspace:
-        return {"error": "Workspace not found"}
+        return {"error": "Workspace not found", "code": 404}
 
     data = await _load_workspace_data(db, userId, selected_id)
     data.workspace = workspace
@@ -273,3 +295,84 @@ async def resolve_dashboard(
         "project_roles": dict(data.project_roles),
         "paper_roles": dict(data.paper_roles),
     }
+
+
+async def resolve_active_workspace(
+    db: AsyncSession,
+    userId: str,
+    collectionId: str | None = None,
+    projectId: str | None = None,
+    workspaceId: str | None = None,
+    lastVisitedWorkspaceId: str | None = None,
+) -> dict:
+    """
+    Resolve the active workspace for the current user depending on what screen.
+
+    Priority order:
+      1. workspaceId (queryParam, explicit) → hard fail if not found
+      2. collectionId → fetch entity and extract workspaceId
+      3. projectId → fetch entity and extract workspaceId
+      4. lastVisitedWorkspaceId (localStorage, stale) → soft fail, fall through
+      5. entity_members fallback: owner workspace → any workspace → any entity → 403
+    """
+    selected_workspace_id = None
+
+    if workspaceId:
+        workspace = await get_workspace_by_id(db, workspaceId)
+        if not workspace:
+            raise HTTPException(status_code=404, detail="workspace_not_found")
+        selected_workspace_id = workspaceId
+
+    if not selected_workspace_id and collectionId:
+        collection = await get_collection_by_id(db, collectionId)
+        if collection:
+            selected_workspace_id = collection.workspaceId
+
+    if not selected_workspace_id and projectId:
+        project = await get_project_by_id(db, projectId)
+        if project:
+            selected_workspace_id = project.workspaceId
+
+    if not selected_workspace_id and lastVisitedWorkspaceId:
+        workspace = await get_workspace_by_id(db, lastVisitedWorkspaceId)
+        if workspace:
+            selected_workspace_id = lastVisitedWorkspaceId
+
+    if not selected_workspace_id:
+        # Priority 1: closest to home
+        result = await db.execute(
+            select(EntityMembers.workspaceId).where(
+                EntityMembers.userId == userId,
+                EntityMembers.entityType == EntityType.workspace,
+                EntityMembers.role == MemberRole.owner,
+            ).order_by(EntityMembers.grantedAt.asc()).limit(1)
+        )
+        selected_workspace_id = result.scalar_one_or_none()
+
+    if not selected_workspace_id:
+        # Priority 2: any direct workspace membership
+        result = await db.execute(
+            select(EntityMembers.workspaceId).where(
+                EntityMembers.userId == userId,
+                EntityMembers.entityType == EntityType.workspace,
+            ).order_by(EntityMembers.grantedAt.asc()).limit(1)
+        )
+        selected_workspace_id = result.scalar_one_or_none()
+
+    if not selected_workspace_id:
+        # Priority 3: any entity membership, get its workspaceId.
+        result = await db.execute(
+            select(EntityMembers.workspaceId).where(
+                EntityMembers.userId == userId,
+            ).order_by(EntityMembers.grantedAt.asc()).limit(1)
+        )
+        selected_workspace_id = result.scalar_one_or_none()
+
+    if not selected_workspace_id:
+        raise HTTPException(status_code=403, detail="no_workspace_available")
+
+    workspace = await get_workspace_by_id(db, selected_workspace_id)
+    if not workspace:
+        raise HTTPException(status_code=404, detail="no_workspace_available")
+
+    return workspace

@@ -6,3 +6,5 @@
 - Don't restructure code patterns that already work. Stick to the existing pattern.
 - When the I say "fix X", only fix X — not X, Y, Z, and refactor the whole thing.
 - Don't future proof stuff if not asked to.
+- Don't messup my beautiful comments, and dont add comments if not asked to.
+- I make often make heavy changes between prompts, don't overwrite those.
