@@ -36,7 +36,7 @@ export default function DashboardRibbon() {
     if (collectionId) {
       getCollectionById(collectionId).then(setActiveCollection);
     }
-  }, [projectId, collectionId, getProjectById, getCollectionById, resolveProjectScreen, resolveWorkspaceScreen]);
+  }, [projectId, collectionId]);
 
   if (collectionId) {
     if (!activeProject || !activeCollection) return <RibbonItemSkeleton />;

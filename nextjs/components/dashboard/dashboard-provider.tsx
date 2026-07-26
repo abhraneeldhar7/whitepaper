@@ -267,7 +267,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
 
     resolveWorkspaceIdentity(resolveParams);
-  }, [segments, searchParams, resolveWorkspaceIdentity]);
+  }, [segments, searchParams]);
 
   return (
     <DashboardContext.Provider value={{

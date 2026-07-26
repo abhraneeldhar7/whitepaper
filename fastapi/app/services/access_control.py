@@ -22,12 +22,6 @@ from app.utils.helpers import now
 
 
 
-from app.services.collection import get_collection_by_id
-from app.services.paper import get_paper_by_id
-from app.services.project import get_project_by_id
-from app.services.workspace import get_workspace_by_id
-
-
 
 
 
@@ -151,6 +145,17 @@ async def _get_user_roles_count(db: AsyncSession, userId: str) -> int:
     )
     return result.scalar_one()
 
+
+async def get_user_memberships(
+    db: AsyncSession, userId: str, workspaceId: str
+) -> list[EntityMembers]:
+    result = await db.execute(
+        select(EntityMembers).where(
+            EntityMembers.userId == userId,
+            EntityMembers.workspaceId == workspaceId,
+        )
+    )
+    return list(result.scalars().all())
 
 
 def can(role: str, entity_type: str, action: str) -> bool:
@@ -314,6 +319,11 @@ async def list_accessible_items(
             break
 
     if not direct_role:
+        from app.services.collection import get_collection_by_id
+        from app.services.paper import get_paper_by_id
+        from app.services.project import get_project_by_id
+        from app.services.workspace import get_workspace_by_id
+
         if context_type == "workspace":
             entity = await get_workspace_by_id(db, context_id)
         elif context_type == "project":

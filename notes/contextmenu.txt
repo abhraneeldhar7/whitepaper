@@ -1,0 +1,5 @@
+grid, list system.
+
+foldercard right click: open, rename, info, share, move, delete.
+papercard: open, rename, make copy, info, share, move, export> md pdf, delete.
+empty right click: new paper, new <entity> , import,  search, refresh

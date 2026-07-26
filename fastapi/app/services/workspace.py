@@ -6,8 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
 from app.services.access_control import (
-    get_entity_members,
-    get_any_accessible_workspace,
     has_workspace_access,
 )
 from app.services.collection import get_collection_by_id
@@ -63,19 +61,6 @@ async def create_personal_workspace(
     return workspace
 
 
-async def get_oldest_owned_workspace(
-    db: AsyncSession, userId: str
-) -> str | None:
-    result = await db.execute(
-        select(EntityMembers.workspaceId).where(
-            EntityMembers.userId == userId,
-            EntityMembers.entityType == EntityType.workspace,
-            EntityMembers.role == MemberRole.owner,
-        ).order_by(EntityMembers.grantedAt.asc()).limit(1)
-    )
-    return result.scalar_one_or_none()
-
-
 @dataclass
 class DashboardResult:
     workspace: Workspace
@@ -99,7 +84,9 @@ async def _load_workspace_data(
     - If entityType=paper or entityType=collection → resolve parent project,
       show those.
     """
-    members = await get_entity_members(db, userId, workspaceId)
+    from app.services.access_control import get_user_memberships
+
+    members = await get_user_memberships(db, userId, workspaceId)
 
     has_workspace_access = any(
         m.entityType == EntityType.workspace for m in members
@@ -194,107 +181,6 @@ async def _load_workspace_data(
         project_roles=project_roles,
         paper_roles=paper_roles,
     )
-
-
-async def resolve_dashboard(
-    db: AsyncSession,
-    userId: str,
-    workspace_id: str | None,
-) -> dict:
-    """
-    Single entry point for the /dashboard screen.
-
-    Algorithm:
-    1. If workspace_id provided → use it (no questions asked per spec)
-    2. If not → caller should have sent lastVisitedWorkspaceId from localStorage
-       (we just receive whatever they send)
-    3. Check access to selected workspaceId
-    4. If blocked → fallback to oldest owned, then any accessible, then error
-    5. If access OK → fetch all data and return
-
-    Returns dict with either:
-    - { workspaceId, papers, projects, workspace_role, project_roles, paper_roles }
-    - { error, redirectTo } — frontend should show toast and redirect
-    - { error } — no workspaces at all
-    """
-    # --- Step 1: Resolve workspaceId ---
-    selected_id = requested_workspace_id
-
-    # --- Step 2: Check access ---
-    if selected_id:
-        has_access = await has_workspace_access(db, userId, selected_id)
-        if not has_access:
-            # Access blocked — fallback per spec
-            fallback_id = await get_oldest_owned_workspace(db, userId)
-            if not fallback_id:
-                fallback_id = await get_any_accessible_workspace(db, userId)
-
-            if fallback_id:
-                return {
-                    "error": "You don't have access to this workspace. Redirecting to your default workspace...",
-                    "redirectTo": fallback_id,
-                }
-            else:
-                return {"error": "No workspaces available for this account"}
-
-    # --- Step 3: If no workspaceId sent, find one ---
-    if not selected_id:
-        selected_id = await get_oldest_owned_workspace(db, userId)
-        if not selected_id:
-            selected_id = await get_any_accessible_workspace(db, userId)
-
-        if not selected_id:
-            return {"error": "No workspaces available for this account"}
-
-    # --- Step 4: Fetch workspace + data ---
-    workspace = await get_workspace_by_id(db, selected_id)
-    if not workspace:
-        return {"error": "Workspace not found", "code": 404}
-
-    data = await _load_workspace_data(db, userId, selected_id)
-    data.workspace = workspace
-
-    return {
-        "workspaceId": data.workspace.workspaceId,
-        "workspace": {
-            "workspaceId": data.workspace.workspaceId,
-            "workspaceName": data.workspace.workspaceName,
-            "workspaceSlug": data.workspace.workspaceSlug,
-            "workspaceType": data.workspace.workspaceType,
-            "plan": data.workspace.plan,
-            "status": data.workspace.status,
-        },
-        "papers": [
-            {
-                "paperId": p.paperId,
-                "title": p.title,
-                "publicSlug": p.publicSlug,
-                "thumbnailUrl": p.thumbnailUrl,
-                "visibility": p.visibility,
-                "projectId": p.projectId,
-                "collectionId": p.collectionId,
-                "createdAt": p.createdAt.isoformat(),
-                "updatedAt": p.updatedAt.isoformat(),
-            }
-            for p in data.papers
-        ],
-        "projects": [
-            {
-                "projectId": pr.projectId,
-                "name": pr.name,
-                "publicSlug": pr.publicSlug,
-                "description": pr.description,
-                "logoUrl": pr.logoUrl,
-                "visibility": pr.visibility,
-                "createdAt": pr.createdAt.isoformat(),
-                "updatedAt": pr.updatedAt.isoformat(),
-            }
-            for pr in data.projects
-        ],
-        "workspace_role": data.workspace_role,
-        "project_roles": dict(data.project_roles),
-        "paper_roles": dict(data.paper_roles),
-    }
 
 
 async def resolve_active_workspace(
