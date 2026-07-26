@@ -13,6 +13,7 @@ import { LAST_VISITED_WORKSPACEID_KEY, DASHBOARD_IDLE_REFRESH_SECONDS } from "@/
 import {
   resolveActiveWorkspace,
   fetchWorkspaceScreen,
+  getAvailableWorkspaces,
   type WorkspaceScreenData,
 } from "@/lib/api/services/workspace";
 import { fetchProjectScreen, type ProjectScreenData, type ProjectWithRole, type CollectionWithRole, fetchProjectById } from "@/lib/api/services/projects";
@@ -53,6 +54,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
         return res.workspaceId;
       } catch (e) {
+        console.log(e)
         if (e instanceof ApiError) {
           const msg = JSON.parse(e.message)?.detail;
 
@@ -129,18 +131,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     useDashboardStore.setState((s) => ({
       projectScreenMap: existing
         ? s.projectScreenMap.map((psc) =>
-            psc.projectId === projectId ? { ...psc, isLoading: true } : psc
-          )
+          psc.projectId === projectId ? { ...psc, isLoading: true } : psc
+        )
         : [
-            ...s.projectScreenMap,
-            {
-              lastFetched: 0,
-              isLoading: true,
-              projectId,
-              collectionIdArray: [],
-              paperIdArray: [],
-            },
-          ],
+          ...s.projectScreenMap,
+          {
+            lastFetched: 0,
+            isLoading: true,
+            projectId,
+            collectionIdArray: [],
+            paperIdArray: [],
+          },
+        ],
     }));
 
     const data = await fetchProjectScreen(projectId);
@@ -175,17 +177,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     useDashboardStore.setState((s) => ({
       collectionScreenMap: existing
         ? s.collectionScreenMap.map((csc) =>
-            csc.collectionId === collectionId ? { ...csc, isLoading: true } : csc
-          )
+          csc.collectionId === collectionId ? { ...csc, isLoading: true } : csc
+        )
         : [
-            ...s.collectionScreenMap,
-            {
-              lastFetched: 0,
-              isLoading: true,
-              collectionId,
-              paperIdArray: [],
-            },
-          ],
+          ...s.collectionScreenMap,
+          {
+            lastFetched: 0,
+            isLoading: true,
+            collectionId,
+            paperIdArray: [],
+          },
+        ],
     }));
 
     const data = await fetchCollectionScreen(collectionId);
@@ -268,6 +270,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
     resolveWorkspaceIdentity(resolveParams);
   }, [segments, searchParams]);
+
+  useEffect(() => {
+    const existing = useDashboardStore.getState().availableWorkspaces;
+    if (existing.length > 0) return;
+    getAvailableWorkspaces().then(ws =>
+      useDashboardStore.setState({ availableWorkspaces: ws })
+    );
+  }, []);
 
   return (
     <DashboardContext.Provider value={{

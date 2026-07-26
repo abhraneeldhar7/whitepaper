@@ -54,6 +54,7 @@ class WorkspaceStatus(StrEnum):
 
 class Workspace(SQLModel, table=True):
     __tablename__ = "workspaces"
+    model_config = {"use_enum_values": True}
 
     ownerId: str
     workspaceId: str = Field(primary_key=True)
@@ -82,6 +83,7 @@ class SubscriptionStatus(StrEnum):
 
 class Subscription(SQLModel, table=True):
     __tablename__ = "subscriptions"
+    model_config = {"use_enum_values": True}
 
     subId: str = Field(primary_key=True)
     workspaceId: str
@@ -114,6 +116,7 @@ class MemberRole(StrEnum):
 
 class EntityMembers(SQLModel, table=True):
     __tablename__ = "entity_members"
+    model_config = {"use_enum_values": True}
 
     workspaceId: str = Field(primary_key=True)
     entityId: str = Field(primary_key=True)
@@ -134,6 +137,7 @@ class Visibility(StrEnum):
 
 class Project(SQLModel, table=True):
     __tablename__ = "projects"
+    model_config = {"use_enum_values": True}
 
     workspaceId: str
     projectId: str = Field(primary_key=True)
@@ -151,6 +155,7 @@ class Project(SQLModel, table=True):
 
 class Collection(SQLModel, table=True):
     __tablename__ = "collections"
+    model_config = {"use_enum_values": True}
 
     workspaceId: str
     projectId: str
@@ -168,6 +173,7 @@ class Collection(SQLModel, table=True):
 
 class Paper(SQLModel, table=True):
     __tablename__ = "papers"
+    model_config = {"use_enum_values": True}
 
     workspaceId: str
     projectId: Optional[str] = None

@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     APP_NAME: str = "Whitepapper_FASTAPI"
     ENVIRONMENT: str = "DEVELOPMENT"
-    CORS_ORIGINS: str = "http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
     PUBLIC_SITE_URL: str = "http://localhost:3000"
 
     CLERK_SECRET_KEY: str

@@ -5,9 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
-from app.services.access_control import (
-    has_workspace_access,
-)
 from app.services.collection import get_collection_by_id
 from app.services.project import get_project_by_id
 from app.shared.schema import (
@@ -59,6 +56,25 @@ async def create_personal_workspace(
     )
     db.add(workspace)
     return workspace
+
+
+async def get_user_workspaces(
+    db: AsyncSession, userId: str
+):
+    result = await db.execute(
+        select(EntityMembers.workspaceId)
+        .where(EntityMembers.userId == userId)
+        .distinct()
+    )
+    workspace_ids = result.scalars().all()
+    if not workspace_ids:
+        return []
+
+    workspaces = (await db.execute(
+        select(Workspace).where(Workspace.workspaceId.in_(workspace_ids))
+    )).scalars().all()
+
+    return workspaces
 
 
 @dataclass
@@ -190,7 +206,7 @@ async def resolve_active_workspace(
     projectId: str | None = None,
     workspaceId: str | None = None,
     lastVisitedWorkspaceId: str | None = None,
-) -> dict:
+):
     """
     Resolve the active workspace for the current user depending on what screen.
 

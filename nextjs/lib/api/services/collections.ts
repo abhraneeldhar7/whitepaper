@@ -24,8 +24,8 @@ export function fetchCollectionById(
   collectionId: string,
   client: ApiClient = apiClient,
 ): Promise<CollectionWithRole | null> {
-  return client.get<CollectionWithRole | null>(
+  return client.get<{ collection: Collection, role: string } | null>(
     PRIVATE.COLLECTION_BY_ID,
     { query: { collectionId } },
-  );
+  ).then(r => r ? { ...r.collection, role: r.role } as CollectionWithRole : null);
 }

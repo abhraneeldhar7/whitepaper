@@ -424,6 +424,6 @@ async def list_accessible_items(
     
     for child_key in children:
         items = list(result_map[child_key].values())
-        setattr(result, child_key, items if items else None)
+        setattr(result, child_key, items if items else [])
     
     return result

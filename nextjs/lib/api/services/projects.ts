@@ -29,8 +29,8 @@ export function fetchProjectById(
   projectId: string,
   client: ApiClient = apiClient,
 ): Promise<ProjectWithRole | null> {
-  return client.get<ProjectWithRole | null>(
+  return client.get<{ project: Project, role: string } | null>(
     PRIVATE.PROJECT_BY_ID,
     { query: { projectId } },
-  );
+  ).then(r => r ? { ...r.project, role: r.role } as ProjectWithRole : null);
 }

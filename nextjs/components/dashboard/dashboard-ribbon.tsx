@@ -1,13 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter, useSelectedLayoutSegments } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useDashboard, useDashboardStore } from "@/components/dashboard/dashboard-provider";
 import EntitySelector from "@/components/dashboard/entity-selector";
 import ContainerLogo from "@/components/container-logo";
 import { RibbonItemSkeleton } from "@/components/dashboard/ribbon-item";
-import type { ProjectWithRole, CollectionWithRole } from "@/lib/api/services/projects";
 
 export default function DashboardRibbon() {
   const segments = useSelectedLayoutSegments();
@@ -19,24 +18,37 @@ export default function DashboardRibbon() {
 
   const activeWorkspace = useDashboardStore((s) => s.activeWorkspace);
   const availableWorkspaces = useDashboardStore((s) => s.availableWorkspaces);
-
-  const [activeProject, setActiveProject] = useState<ProjectWithRole | null>(null);
-  const [activeCollection, setActiveCollection] = useState<CollectionWithRole | null>(null);
-  const [siblingProjects, setSiblingProjects] = useState<ProjectWithRole[]>([]);
-  const [siblingCollections, setSiblingCollections] = useState<CollectionWithRole[]>([]);
+  const projects = useDashboardStore((s) => s.projects);
+  const collections = useDashboardStore((s) => s.collections);
+  const workspaceScreenMap = useDashboardStore((s) => s.workspaceScreenMap);
+  const projectScreenMapArr = useDashboardStore((s) => s.projectScreenMap);
 
   useEffect(() => {
     if (projectId) {
-      getProjectById(projectId).then(setActiveProject);
-      resolveProjectScreen(projectId).then((d) => { if (d) setSiblingCollections(d.collections); });
+      getProjectById(projectId);
+      resolveProjectScreen(projectId);
       if (!collectionId) {
-        resolveWorkspaceScreen().then((d) => { if (d) setSiblingProjects(d.projects); });
+        resolveWorkspaceScreen();
       }
     }
     if (collectionId) {
-      getCollectionById(collectionId).then(setActiveCollection);
+      getCollectionById(collectionId);
     }
   }, [projectId, collectionId]);
+
+  const activeProject = projectId ? projects.find((p) => p.projectId === projectId) ?? null : null;
+  const activeCollection = collectionId ? collections.find((c) => c.collectionId === collectionId) ?? null : null;
+
+  const siblingProjects = workspaceScreenMap
+    ? projects.filter((p) => workspaceScreenMap.projectIdArray.includes(p.projectId))
+    : [];
+
+  const siblingCollections = (() => {
+    if (!projectId) return [];
+    const map = projectScreenMapArr.find((m) => m.projectId === projectId);
+    if (!map) return [];
+    return collections.filter((c) => map.collectionIdArray.includes(c.collectionId));
+  })();
 
   if (collectionId) {
     if (!activeProject || !activeCollection) return <RibbonItemSkeleton />;

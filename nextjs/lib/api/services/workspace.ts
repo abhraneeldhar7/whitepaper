@@ -2,12 +2,6 @@ import { apiClient, type ApiClient } from "@/lib/api/api-client";
 import { PRIVATE } from "@/lib/api/endpoints";
 import type { Workspace, Project, Paper } from "@/lib/types";
 
-export interface WorkspaceItem {
-  workspaceId: string;
-  role: string;
-  workspaceName: string;
-}
-
 export interface ProjectWithRole extends Project {
   role: string;
 }
@@ -30,10 +24,10 @@ export function resolveActiveWorkspace(
   });
 }
 
-export function listWorkspaces(
+export function getAvailableWorkspaces(
   client: ApiClient = apiClient,
-): Promise<WorkspaceItem[]> {
-  return client.get<WorkspaceItem[]>(PRIVATE.LIST_WORKSPACES);
+): Promise<Workspace[]> {
+  return client.get<Workspace[]>(PRIVATE.LIST_WORKSPACES);
 }
 
 export function fetchWorkspaceScreen(

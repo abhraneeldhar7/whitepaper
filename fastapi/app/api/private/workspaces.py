@@ -5,8 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import db
 from app.core.security import get_verified_request, VerifiedRequest
-from app.services.access_control import get_user_workspaces
-from app.services.workspace import resolve_active_workspace
+from app.services.workspace import get_user_workspaces, resolve_active_workspace
 
 router = APIRouter(prefix="/workspaces")
 
@@ -15,7 +14,7 @@ router = APIRouter(prefix="/workspaces")
 async def list_workspaces(
     session: AsyncSession = Depends(db.get_db),
     auth: VerifiedRequest = Depends(get_verified_request),
-) -> list[dict]:
+):
     return await get_user_workspaces(session, auth.userId)
 
 
@@ -27,7 +26,7 @@ async def workspace_active(
     lastVisitedWorkspaceId: Optional[str] = Query(None),
     session: AsyncSession = Depends(db.get_db),
     auth: VerifiedRequest = Depends(get_verified_request),
-) -> dict:
+):
     return await resolve_active_workspace(
         session, auth.userId,
         collectionId=collectionId,

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import db
 from app.core.security import get_verified_request, VerifiedRequest
 from app.services.paper import get_paper_by_id
-from app.shared.permissions import resolve_role_for_entity
+from app.services.access_control import check_access
 
 router = APIRouter(prefix="/papers", tags=["papers"])
 
@@ -19,8 +19,8 @@ async def get_paper(
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
 
-    role = resolve_role_for_entity(auth.roles, paper, "paper")
-    if not role:
+    has_access, role = check_access(auth.roles, paper, "view")
+    if not has_access:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    return {**paper.model_dump(), "role": role}
+    return {"paper": paper, "role": role}

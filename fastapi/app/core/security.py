@@ -37,6 +37,18 @@ async def get_verified_request(request: Request) -> VerifiedRequest:
         raise HTTPException(status_code=401, detail="No user ID in token")
 
     raw_roles: list[dict] = payload.get("metadata", {}).get("roles", [])
-    roles = [ClerkUserRole(**r) for r in raw_roles]
+    roles = [
+        ClerkUserRole(
+            workspaceId=r.get("workspaceId", ""),
+            entityId=r.get("entityId", ""),
+            userId=r.get("userId", ""),
+            entityType=r.get("entityType", ""),
+            role=r.get("role", ""),
+            grantedAt=r.get("grantedAt", ""),
+            grantedBySystem=r.get("grantedBySystem", False),
+            grantedById=r.get("grantedById"),
+        )
+        for r in raw_roles
+    ]
 
     return VerifiedRequest(userId=user_id, roles=roles)
