@@ -25,9 +25,9 @@ export { useDashboardStore };
 
 interface DashboardContextType {
   setWorkspaceId: (id: string) => Promise<void>;
-  resolveWorkspaceScreen: () => Promise<WorkspaceScreenData | undefined>;
-  resolveProjectScreen: (projectId: string) => Promise<ProjectScreenData | undefined>;
-  resolveCollectionScreen: (collectionId: string) => Promise<PaperWithRole[] | undefined>;
+  resolveWorkspaceScreen: () => Promise<WorkspaceScreenData | null>;
+  resolveProjectScreen: (projectId: string) => Promise<ProjectScreenData | null>;
+  resolveCollectionScreen: (collectionId: string) => Promise<PaperWithRole[] | null>;
   getProjectById: (projectId: string) => Promise<ProjectWithRole | null>;
   getCollectionById: (collectionId: string) => Promise<CollectionWithRole | null>;
   getPaperById: (paperId: string) => Promise<PaperWithRole | null>;
@@ -78,9 +78,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [router],
   );
 
-  async function resolveWorkspaceScreen(): Promise<WorkspaceScreenData | undefined> {
+  async function resolveWorkspaceScreen(): Promise<WorkspaceScreenData | null> {
     const workspaceId = useDashboardStore.getState().activeWorkspace?.workspaceId;
-    if (!workspaceId) return undefined;
+    if (!workspaceId) return null;
 
     const existing = useDashboardStore.getState().workspaceScreenMap;
     if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
@@ -115,7 +115,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     return data;
   }
 
-  async function resolveProjectScreen(projectId: string): Promise<ProjectScreenData | undefined> {
+  async function resolveProjectScreen(projectId: string): Promise<ProjectScreenData | null> {
     const maps = useDashboardStore.getState().projectScreenMap;
     const existing = maps.find((psc) => psc.projectId === projectId);
     if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
@@ -164,7 +164,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     return data;
   }
 
-  async function resolveCollectionScreen(collectionId: string): Promise<PaperWithRole[] | undefined> {
+  async function resolveCollectionScreen(collectionId: string): Promise<PaperWithRole[] | null> {
     const maps = useDashboardStore.getState().collectionScreenMap;
     const existing = maps.find((csc) => csc.collectionId === collectionId);
     if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
