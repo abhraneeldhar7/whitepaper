@@ -12,7 +12,7 @@ export default function DashboardRoot({
 }) {
   return (
     <div className="w-full h-full min-h-screen flex flex-col bg-muted">
-      <div className="flex justify-between items-center p-3 md:p-4">
+      <div className="flex gap-3 justify-between items-center p-1 md:p-2 py-1 md:py-2">
         {ribbon}
         <UserPopover />
       </div>

@@ -10,6 +10,7 @@ import {
 import { useRouter, useSearchParams, useSelectedLayoutSegments } from "next/navigation";
 import { toast } from "sonner";
 import { LAST_VISITED_WORKSPACEID_KEY, DASHBOARD_IDLE_REFRESH_SECONDS } from "@/lib/constants";
+import type { Workspace } from "@/lib/types";
 import {
   resolveActiveWorkspace,
   fetchWorkspaceScreen,
@@ -29,6 +30,7 @@ interface DashboardContextType {
   resolveWorkspaceScreen: () => Promise<WorkspaceScreenData | null>;
   resolveProjectScreen: (projectId: string) => Promise<ProjectScreenData | null>;
   resolveCollectionScreen: (collectionId: string) => Promise<PaperWithRole[] | null>;
+  resolveAvailableWorkspaces: () => Promise<Workspace[] | null>;
   getProjectById: (projectId: string) => Promise<ProjectWithRole | null>;
   getCollectionById: (collectionId: string) => Promise<CollectionWithRole | null>;
   getPaperById: (paperId: string) => Promise<PaperWithRole | null>;
@@ -211,6 +213,31 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     return data.papers;
   }
 
+  async function resolveAvailableWorkspaces(): Promise<Workspace[] | null> {
+    const existing = useDashboardStore.getState().availableWorkspacesMap;
+    if (existing.workspaceIds.length > 0) {
+      return useDashboardStore.getState().workspaces.filter((w) => existing.workspaceIds.includes(w.workspaceId));
+    }
+
+    useDashboardStore.setState({ availableWorkspacesMap: { ...existing, isLoading: true } });
+
+    try {
+      const data = await getAvailableWorkspaces();
+      useDashboardStore.getState().upsertToWorkspaces(data);
+      useDashboardStore.setState({
+        availableWorkspacesMap: {
+          lastFetched: Date.now(),
+          isLoading: false,
+          workspaceIds: data.map((w) => w.workspaceId),
+        },
+      });
+      return data;
+    } catch {
+      useDashboardStore.setState({ availableWorkspacesMap: { ...existing, isLoading: false } });
+      return null;
+    }
+  }
+
   async function getProjectById(projectId: string): Promise<ProjectWithRole | null> {
     const cached = useDashboardStore.getState().getProjectById(projectId);
     if (cached) return cached;
@@ -271,20 +298,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     resolveWorkspaceIdentity(resolveParams);
   }, [segments, searchParams]);
 
-  useEffect(() => {
-    const existing = useDashboardStore.getState().availableWorkspaces;
-    if (existing.length > 0) return;
-    getAvailableWorkspaces().then(ws =>
-      useDashboardStore.setState({ availableWorkspaces: ws })
-    );
-  }, []);
-
   return (
     <DashboardContext.Provider value={{
       setWorkspaceId,
       resolveWorkspaceScreen,
       resolveProjectScreen,
       resolveCollectionScreen,
+      resolveAvailableWorkspaces,
       getProjectById,
       getCollectionById,
       getPaperById,

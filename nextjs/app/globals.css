@@ -46,7 +46,7 @@
   --leading-normal: 1.6;
 
 
-  --radius-xs: 4px;
+  --radius-xs: 5px;
   --radius-sm: 8px;
   --radius-md: 12px;
 
@@ -110,7 +110,7 @@
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(15.434% 0.00002 271.152);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);

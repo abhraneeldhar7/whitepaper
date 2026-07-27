@@ -6,6 +6,12 @@ import type {
   PaperWithRole,
 } from "@/lib/api/services/dashboard";
 
+interface AvailableWorkspacesMap {
+  isLoading: boolean;
+  lastFetched: number;
+  workspaceIds: string[];
+}
+
 interface WorkspaceScreenMap {
   lastFetched: number;
   isLoading: boolean;
@@ -32,19 +38,21 @@ interface CollectionScreenMap {
 interface DashboardState {
   activeWorkspace: Workspace | null;
   isLoadingActiveWorkspace: boolean;
-  availableWorkspaces: Workspace[];
+  availableWorkspacesMap: AvailableWorkspacesMap;
 
   workspaceScreenMap: WorkspaceScreenMap | null;
   projectScreenMap: ProjectScreenMap[];
   collectionScreenMap: CollectionScreenMap[];
 
+  workspaces: Workspace[];
   papers: PaperWithRole[];
   projects: ProjectWithRole[];
   collections: CollectionWithRole[];
-  
+
   members: MemberWithUser[];
   lastMembersFetch: number;
 
+  upsertToWorkspaces: (workspaces: Workspace[]) => void;
   upsertToProjects: (projects: ProjectWithRole[]) => void;
   upsertToCollections: (collections: CollectionWithRole[]) => void;
   upsertToPapers: (papers: PaperWithRole[]) => void;
@@ -57,6 +65,7 @@ interface DashboardState {
   updateInCollections: (collectionId: string, data: Partial<CollectionWithRole>) => void;
   updateInPapers: (paperId: string, data: Partial<PaperWithRole>) => void;
 
+  getWorkspaceById: (workspaceId: string) => Workspace | undefined;
   getProjectById: (projectId: string) => ProjectWithRole | undefined;
   getCollectionById: (collectionId: string) => CollectionWithRole | undefined;
   getPaperById: (paperId: string) => PaperWithRole | undefined;
@@ -65,15 +74,27 @@ interface DashboardState {
 export const useDashboardStore = create<DashboardState>((set, get) => ({
   activeWorkspace: null,
   isLoadingActiveWorkspace: true,
-  availableWorkspaces: [],
+  availableWorkspacesMap: { isLoading: false, lastFetched: 0, workspaceIds: [] },
   workspaceScreenMap: null,
   projectScreenMap: [],
   collectionScreenMap: [],
+  workspaces: [],
   papers: [],
   projects: [],
   collections: [],
   members: [],
   lastMembersFetch: 0,
+
+  upsertToWorkspaces: (incoming) =>
+    set((s) => {
+      const updated = [...s.workspaces];
+      for (const w of incoming) {
+        const idx = updated.findIndex((x) => x.workspaceId === w.workspaceId);
+        if (idx >= 0) updated[idx] = w;
+        else updated.push(w);
+      }
+      return { workspaces: updated };
+    }),
 
   upsertToProjects: (incoming) =>
     set((s) => {
@@ -167,6 +188,9 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         p.paperId === paperId ? { ...p, ...data } : p
       ),
     })),
+
+  getWorkspaceById: (workspaceId) =>
+    get().workspaces.find((w) => w.workspaceId === workspaceId),
 
   getProjectById: (projectId) =>
     get().projects.find((p) => p.projectId === projectId),

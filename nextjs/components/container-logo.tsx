@@ -14,15 +14,14 @@ export default function ContainerLogo({ imageUrl, name, size = 30 }: ContainerLo
         alt={name}
         width={size}
         height={size}
-        className="rounded-sm shrink-0"
-        unoptimized
+        className="shrink-0"
       />
     );
   }
 
   return (
     <div
-      className="rounded-sm bg-muted-foreground/20 flex items-center justify-center shrink-0"
+      className="rounded-[6px] bg-muted-foreground/20 flex items-center justify-center shrink-0 overflow-hidden"
       style={{ width: size, height: size }}
     >
       <span className="text-xs font-medium text-muted-foreground">

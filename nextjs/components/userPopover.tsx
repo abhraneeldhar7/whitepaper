@@ -8,10 +8,12 @@ import { User } from "@/lib/types";
 import TruncateText from "./ui/truncateText";
 import { Button } from "./ui/button";
 import { ThemeSwitcher } from "./ui/theme-switcher";
+import { cn } from "@/lib/utils";
 
 const UserAvatar = ({ user, size, className }: { user: User, size: number, className?: string }) => {
     return (
-        <div className={className}>
+        <div className={cn("relative overflow-hidden rounded-[50%] group", className)}>
+            {/* <div className="absolute z-[2] h-[200%] w-[14px] bg-[red] top-[20%] left-[-40%] group-hover:left-[100%] group-hover:top-[-10%] transition-all"/> */}
             <Avatar className={`size-[${size}px]`}>
                 {user.avatarUrl ?
                     <AvatarImage src={user?.avatarUrl} /> :
@@ -46,7 +48,6 @@ export default function UserPopover() {
             <PopoverContent align="end" className="max-w-[250px]">
                 {user &&
                     <div>
-
                         <div className="flex gap-3">
                             <UserAvatar user={user} size={45} />
                             <div className="flex flex-col w-full">

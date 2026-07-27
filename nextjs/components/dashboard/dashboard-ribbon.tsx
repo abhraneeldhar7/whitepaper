@@ -14,27 +14,29 @@ export default function DashboardRibbon() {
   const projectId = segments[0];
   const collectionId = segments[1];
 
-  const { setWorkspaceId, resolveWorkspaceScreen, resolveProjectScreen, getProjectById, getCollectionById } = useDashboard();
+  const { setWorkspaceId, resolveWorkspaceScreen, resolveProjectScreen, resolveAvailableWorkspaces } = useDashboard();
 
   const activeWorkspace = useDashboardStore((s) => s.activeWorkspace);
-  const availableWorkspaces = useDashboardStore((s) => s.availableWorkspaces);
+  const availableWorkspacesMap = useDashboardStore((s) => s.availableWorkspacesMap);
+  const workspaces = useDashboardStore((s) => s.workspaces);
   const projects = useDashboardStore((s) => s.projects);
   const collections = useDashboardStore((s) => s.collections);
   const workspaceScreenMap = useDashboardStore((s) => s.workspaceScreenMap);
   const projectScreenMapArr = useDashboardStore((s) => s.projectScreenMap);
 
+  const availableWorkspaces = workspaces.filter((w) => availableWorkspacesMap.workspaceIds.includes(w.workspaceId));
+
   useEffect(() => {
     if (projectId) {
-      getProjectById(projectId);
       resolveProjectScreen(projectId);
       if (!collectionId) {
         resolveWorkspaceScreen();
       }
     }
-    if (collectionId) {
-      getCollectionById(collectionId);
+    if (activeWorkspace) {
+      resolveAvailableWorkspaces();
     }
-  }, [projectId, collectionId]);
+  }, [projectId, collectionId, activeWorkspace]);
 
   const activeProject = projectId ? projects.find((p) => p.projectId === projectId) ?? null : null;
   const activeCollection = collectionId ? collections.find((c) => c.collectionId === collectionId) ?? null : null;
@@ -53,15 +55,15 @@ export default function DashboardRibbon() {
   if (collectionId) {
     if (!activeProject || !activeCollection) return <RibbonItemSkeleton />;
     return (
-      <div className="flex items-center gap-0.5">
-        <ContainerLogo imageUrl={activeProject.logoUrl} name={activeProject.name} size={24} />
+      <div className="flex items-center gap-2">
+        <ContainerLogo imageUrl={activeProject.logoUrl} name={activeProject.name} />
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
         <EntitySelector
           imageUrl={null}
-          entity={{ id: activeCollection.collectionId, name: activeCollection.name }}
+          entity={activeCollection}
           entityType="collection"
-          items={siblingCollections.map((c) => ({ id: c.collectionId, name: c.name }))}
-          onSelect={(id) => router.push(`/dashboard/${projectId}/${id}`)}
+          items={siblingCollections}
+          onSelect={(entity) => router.push(`/dashboard/${entity.projectId}/${entity.collectionId}`)}
         />
       </div>
     );
@@ -70,15 +72,15 @@ export default function DashboardRibbon() {
   if (projectId) {
     if (!activeWorkspace || !activeProject) return <RibbonItemSkeleton />;
     return (
-      <div className="flex items-center gap-0.5">
-        <ContainerLogo imageUrl={null} name={activeWorkspace.workspaceName} size={24} />
+      <div className="flex items-center gap-2">
+        <ContainerLogo imageUrl={null} name={activeWorkspace.workspaceName} />
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
         <EntitySelector
           imageUrl={activeProject.logoUrl}
-          entity={{ id: activeProject.projectId, name: activeProject.name, logoUrl: activeProject.logoUrl }}
+          entity={activeProject}
           entityType="project"
-          items={siblingProjects.map((p) => ({ id: p.projectId, name: p.name, logoUrl: p.logoUrl }))}
-          onSelect={(id) => router.push(`/dashboard/${id}`)}
+          items={siblingProjects}
+          onSelect={(entity) => router.push(`/dashboard/${entity.projectId}`)}
         />
       </div>
     );
@@ -88,10 +90,10 @@ export default function DashboardRibbon() {
   return (
     <EntitySelector
       imageUrl={null}
-      entity={{ id: activeWorkspace.workspaceId, name: activeWorkspace.workspaceName }}
+      entity={activeWorkspace}
       entityType="workspace"
-      items={availableWorkspaces.map((ws) => ({ id: ws.workspaceId, name: ws.workspaceName }))}
-      onSelect={(id) => setWorkspaceId(id)}
+      items={availableWorkspaces}
+      onSelect={(entity) => setWorkspaceId(entity.workspaceId)}
       disabled={availableWorkspaces.length === 0}
     />
   );

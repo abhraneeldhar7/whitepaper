@@ -4,26 +4,65 @@ import { useCallback } from "react";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import ContainerLogo from "@/components/container-logo";
+import type { Workspace, Project, Collection } from "@/lib/types";
+import { Check } from "lucide-react";
 
-interface SelectableEntity {
-  id: string;
-  name: string;
-  logoUrl?: string | null;
+function getEntityId(
+  entity: Workspace | Project | Collection,
+  entityType: "workspace" | "project" | "collection",
+): string {
+  switch (entityType) {
+    case "workspace":
+      return (entity as Workspace).workspaceId;
+    case "project":
+      return (entity as Project).projectId;
+    case "collection":
+      return (entity as Collection).collectionId;
+  }
 }
 
-interface EntitySelectorProps {
-  imageUrl?: string | null;
-  entity: SelectableEntity | null;
-  entityType: "workspace" | "project" | "collection";
-  items: SelectableEntity[];
-  onSelect: (id: string) => void;
-  disabled?: boolean;
+function getEntityName(entity: Workspace | Project | Collection): string {
+  if ("workspaceName" in entity) return entity.workspaceName;
+  return entity.name;
 }
+
+function getEntityLogoUrl(entity: Workspace | Project | Collection): string | null {
+  if ("logoUrl" in entity) return entity.logoUrl ?? null;
+  return null;
+}
+
+type EntitySelectorProps =
+  | {
+    imageUrl?: string | null;
+    entity: Workspace | null;
+    entityType: "workspace";
+    items: Workspace[];
+    onSelect: (entity: Workspace) => void;
+    disabled?: boolean;
+  }
+  | {
+    imageUrl?: string | null;
+    entity: Project | null;
+    entityType: "project";
+    items: Project[];
+    onSelect: (entity: Project) => void;
+    disabled?: boolean;
+  }
+  | {
+    imageUrl?: string | null;
+    entity: Collection | null;
+    entityType: "collection";
+    items: Collection[];
+    onSelect: (entity: Collection) => void;
+    disabled?: boolean;
+  };
 
 export default function EntitySelector({
   imageUrl,
@@ -35,37 +74,43 @@ export default function EntitySelector({
 }: EntitySelectorProps) {
   const handleValueChange = useCallback(
     (val: string) => {
-      if (val) onSelect(val);
+      const found = items.find((item) => getEntityId(item, entityType) === val);
+      if (found) onSelect(found as never);
     },
-    [onSelect],
+    [items, entityType, onSelect],
   );
 
   if (!entity) return null;
 
-  const filtered = items.filter((item) => item.id !== entity.id);
+  const entityId = getEntityId(entity, entityType);
 
   return (
-    <Select value="" onValueChange={handleValueChange} disabled={disabled}>
-      <SelectTrigger className="border-0 bg-transparent hover:bg-accent px-2 gap-2 h-auto py-1.5 shadow-none text-base font-medium">
-        <ContainerLogo
-          imageUrl={imageUrl ?? entity.logoUrl ?? null}
-          name={entity.name}
-          size={24}
-        />
-        <SelectValue placeholder={entity.name} />
+    <Select onValueChange={handleValueChange} disabled={disabled}>
+      <SelectTrigger className="p-0 rounded-sm pr-3 border-0 group !outline-none !ring-0 !ring-offset-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 transition-all hover:bg-background/70 border-transparent border-1 hover:border-border">
+        <div className="p-1 px-0 group-hover:pl-1 transition-all rounded-sm flex items-center gap-3">
+          <ContainerLogo
+            imageUrl={imageUrl ?? getEntityLogoUrl(entity) ?? null}
+            name={getEntityName(entity)}
+          />
+          <div className="text-foreground/80 group-hover:text-foreground text-sm h-full flex items-center truncate rounded-xs transition-all">{getEntityName(entity)}</div>
+        </div>
       </SelectTrigger>
-      <SelectContent align="start" className="min-w-48">
-        {filtered.map((item) => (
-          <SelectItem key={item.id} value={item.id}>
-            <ContainerLogo imageUrl={item.logoUrl} name={item.name} size={20} />
-            {item.name}
-          </SelectItem>
-        ))}
-        {filtered.length === 0 && !disabled && (
-          <p className="text-xs text-muted-foreground px-2 py-1.5">
-            No other {entityType}s
-          </p>
-        )}
+      <SelectContent className="min-w-48" position="popper">
+        <SelectGroup>
+          {items.map((item) => {
+            const id = getEntityId(item, entityType);
+            const name = getEntityName(item);
+            const logoUrl = getEntityLogoUrl(item);
+            const isActive = id === entityId;
+            return (
+              <SelectItem key={id} value={id}>
+                <ContainerLogo imageUrl={logoUrl} name={name} />
+                {name}
+                {isActive && <Check className="ml-auto size-4" />}
+              </SelectItem>
+            );
+          })}
+        </SelectGroup>
       </SelectContent>
     </Select>
   );
