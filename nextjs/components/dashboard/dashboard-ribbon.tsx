@@ -6,7 +6,16 @@ import { ChevronRight } from "lucide-react";
 import { useDashboard, useDashboardStore } from "@/components/dashboard/dashboard-provider";
 import EntitySelector from "@/components/dashboard/entity-selector";
 import ContainerLogo from "@/components/container-logo";
-import { RibbonItemSkeleton } from "@/components/dashboard/ribbon-item";
+import { Skeleton } from "../ui/skeleton";
+
+function RibbonItemSkeleton() {
+  return (<>
+    <div className="p-1 pl-0 flex gap-2 items-center border-1 border-transparent">
+      <Skeleton className="rounded-sm h-[30px] w-[30px]" />
+      <Skeleton className="h-[20px] w-[120px] rounded-xs" />
+    </div>
+  </>)
+}
 
 export default function DashboardRibbon() {
   const segments = useSelectedLayoutSegments();

@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { getMe } from "@/lib/api/services/user";
+import { configureApiToken } from "@/lib/api/api-client";
 import type { User } from "@/lib/types";
 
 interface UserContextType {
@@ -15,10 +16,12 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, getToken } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  configureApiToken(() => getToken());
 
   const fetchUserData = async () => {
     if (!isSignedIn) {

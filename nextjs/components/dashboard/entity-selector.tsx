@@ -6,9 +6,7 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import ContainerLogo from "@/components/container-logo";
 import type { Workspace, Project, Collection } from "@/lib/types";

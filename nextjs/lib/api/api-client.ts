@@ -21,16 +21,6 @@ export class NetworkError extends Error {
   }
 }
 
-type ClerkWindow = Window & {
-  Clerk?: {
-    loaded?: boolean;
-    load?: () => Promise<void>;
-    session?: {
-      getToken?: () => Promise<string | null>;
-    };
-  };
-};
-
 export type QueryParams = Record<string, QueryPrimitive | QueryPrimitive[]>;
 
 export type RequestOptions = {
@@ -79,24 +69,19 @@ function toRequestUrl(path: string, query?: QueryParams): string {
   return url.toString();
 }
 
-async function resolveBrowserToken(auth: AuthMode): Promise<string | null> {
+let _getToken: (() => Promise<string | null>) | null = null;
+
+export function configureApiToken(getToken: () => Promise<string | null>): void {
+  _getToken = getToken;
+}
+
+async function resolveClientToken(auth: AuthMode): Promise<string | null> {
   if (auth === "none") return null;
-
-  if (typeof window === "undefined") {
-    throw new Error("Browser API client cannot be used for authenticated SSR requests.");
-  }
-
-  const clerk = (window as ClerkWindow).Clerk;
-  if (!clerk) throw new Error("Clerk is not available in the browser.");
-
-  if (!clerk.loaded) await clerk.load?.();
-  if (!clerk.loaded) throw new Error("Clerk failed to initialize.");
-
-  const token = (await clerk.session?.getToken?.()) ?? null;
+  if (!_getToken) throw new Error("API token not configured. Call configureApiToken() first.");
+  const token = await _getToken();
   if (!token && auth === "required") {
     throw new Error(MISSING_TOKEN_ERROR);
   }
-
   return token;
 }
 
@@ -223,4 +208,4 @@ export function createApiClient(tokenOrGetToken: (() => Promise<string | null>) 
   return createRequestClient(createServerTokenResolver(async () => staticToken));
 }
 
-export const apiClient: ApiClient = createRequestClient(resolveBrowserToken);
+export const apiClient: ApiClient = createRequestClient(resolveClientToken);

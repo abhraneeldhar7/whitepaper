@@ -419,7 +419,7 @@ export default function LoginPage() {
   return (
     <div className="px-5">
 
-      <div className="mx-auto flex min-h-[100svh] w-full max-w-[450px] flex-col items-center justify-start gap-[30px] pt-[15vh] ">
+      <div className="mx-auto flex min-h-[100svh] w-full md:max-w-[400px] flex-col items-center justify-start gap-[30px] pt-[10vh] ">
         <ScrollToTop />
         <Image src={appLogo} height={70} width={70} alt="Whitepapper" />
 
@@ -429,7 +429,7 @@ export default function LoginPage() {
           <h1 className="text-[20px]">Join Whitepapper</h1>
         )}
 
-        <div className="flex w-full flex-col gap-[12px]">
+        <div className="flex w-full flex-col gap-3">
           {authMode === "login" ? (
             <OldAccountForm
               redirectUrl={redirectUrl}
@@ -453,7 +453,8 @@ export default function LoginPage() {
             loading={oauthLoading}
             disabled={isAnyLoading}
             size="lg"
-            className={`fadeInUp w-full bg-[white] text-[black] hover:bg-[white]/70`}
+            variant="ghost"
+            className="fadeInUp w-full"
           >
             <Image src={googleLogo} alt="Google" height={17} width={17} className="mr-[10px]" /> Continue with Google
           </Button>

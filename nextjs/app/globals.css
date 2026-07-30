@@ -51,8 +51,8 @@
   --radius-md: 12px;
 
   --duration-fast: 200ms;
-  --duration-default: 400ms;
-  --duration-slow: 500ms;
+  --duration-default: 450ms;
+  --duration-slow: 600ms;
 }
 
 .site-max {
