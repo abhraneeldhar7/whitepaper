@@ -26,7 +26,7 @@ export default function DashboardCreateButton({ onCreateProject }: DashboardCrea
 
             <div className="fixed bottom-5 right-5 z-[50] flex flex-col gap-5 items-end">
                 <Button variant="secondary" className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><StickyNoteIcon />  New paper</Button>
-                <Button variant="secondary" className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><FolderIcon />  New project</Button>
+                <Button variant="secondary" onClick={() => { onCreateProject?.(); setMobileMenuOpen(false); }} className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><FolderIcon />  New project</Button>
                 <Button variant="secondary" className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><FilePlusCornerIcon />  Import paper</Button>
 
                 <Button onClick={() => { setMobileMenuOpen(!mobileMenuOpen) }} size="icon-lg" className="rounded-full p-0">
