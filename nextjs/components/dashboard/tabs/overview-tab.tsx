@@ -1,9 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProjectWithRole, CollectionWithRole, PaperWithRole } from "@/lib/api/services/dashboard";
 import DashboardCreateButton from "../create-popover";
+import CreateProjectDialog from "../create-project-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FilePlusCornerIcon, FilePlusIcon, FolderIcon, LayoutGridIcon, ListIcon, RotateCcw, StickyNoteIcon } from "lucide-react";
+import { FilePlusCornerIcon, FolderIcon, LayoutGridIcon, ListIcon, RotateCcw, StickyNoteIcon } from "lucide-react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 interface OverviewTabProps {
@@ -24,6 +28,8 @@ function OverviewTabSkeleton() {
 }
 
 export default function OverviewTab({ loading = false, projects = [], collections = [], papers = [] }: OverviewTabProps) {
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
+
   if (loading) return <OverviewTabSkeleton />;
 
   return (
@@ -33,14 +39,16 @@ export default function OverviewTab({ loading = false, projects = [], collection
           <Button size="icon" className="rounded-xs" variant="secondary"><LayoutGridIcon /></Button>
           <Button size="icon" className="rounded-xs" variant="ghost"><ListIcon /></Button>
         </div>
-        <Input className="md:w-[300px] h-[40px]" />
-        <DashboardCreateButton />
+        <Input className="md:w-[300px] h-10 sm:h-10" />
+        <DashboardCreateButton onCreateProject={() => setCreateProjectOpen(true)} />
       </div>
+
+      <CreateProjectDialog open={createProjectOpen} onClose={() => setCreateProjectOpen(false)} />
 
 
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="w-full min-h-[500px] bg-[red]">
+          {/* <div className="w-full min-h-[500px] bg-[red]">
             {projects.length > 0 && (
               <div>
                 <h3 className="text-lg font-medium mb-3">Projects</h3>
@@ -59,13 +67,13 @@ export default function OverviewTab({ loading = false, projects = [], collection
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem>
             <StickyNoteIcon /> New paper
           </ContextMenuItem>
-          <ContextMenuItem>
+          <ContextMenuItem onClick={() => setCreateProjectOpen(true)}>
             <FolderIcon /> New project
           </ContextMenuItem>
           <ContextMenuSeparator />

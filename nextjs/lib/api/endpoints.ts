@@ -10,6 +10,7 @@ export const PRIVATE = {
   PROJECT_PAPERS: "/private/dashboard/projects",
   COLLECTION_PAPERS: "/private/dashboard/collections",
   PROJECT_BY_ID: "/private/projects",
+  PROJECT_CREATE: "/private/projects/create",
   COLLECTION_BY_ID: "/private/collections",
   PAPER_BY_ID: "/private/papers/id",
   SCREEN_WORKSPACE: "/private/screen/workspace",

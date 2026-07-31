@@ -213,9 +213,8 @@ function NewAccountForm({ redirectUrl, getClerk, globalLoading, onLoadingChange 
             type="button"
             disabled={isDisabled}
             onClick={() => setShowPassword((prev) => !prev)}
-            className="w-[32px] h-[32px]"
             variant="outline"
-            size="icon-sm"
+            size="icon"
             aria-label="Toggle password visibility"
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -246,7 +245,7 @@ function NewAccountForm({ redirectUrl, getClerk, globalLoading, onLoadingChange 
           newAccount.confirmPassword !== newAccount.password
         }
         style={{ animationDelay: "0.4s" }}
-        className="fadeInUp"
+        className="fadeInUp w-full"
         loading={loading}
         type="submit"
         size="lg"
@@ -346,9 +345,8 @@ function OldAccountForm({ redirectUrl, getClerk, globalLoading, onLoadingChange 
             type="button"
             disabled={isDisabled}
             onClick={() => setShowPassword((prev) => !prev)}
-            className="w-[32px] h-[32px]"
             variant="outline"
-            size="icon-sm"
+            size="icon"
             aria-label="Toggle password visibility"
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -356,7 +354,7 @@ function OldAccountForm({ redirectUrl, getClerk, globalLoading, onLoadingChange 
         </div>
       </div>
 
-      <Button size="lg" style={{ animationDelay: "0.2s" }} type="submit" className="fadeInUp" loading={loading} disabled={isDisabled}>
+      <Button size="lg" style={{ animationDelay: "0.2s" }} type="submit" className="fadeInUp w-full" loading={loading} disabled={isDisabled}>
         Login
       </Button>
     </form>
@@ -421,12 +419,12 @@ export default function LoginPage() {
 
       <div className="mx-auto flex min-h-[100svh] w-full md:max-w-[400px] flex-col items-center justify-start gap-[30px] pt-[10vh] ">
         <ScrollToTop />
-        <Image src={appLogo} height={70} width={70} alt="Whitepapper" />
+        <Image src={appLogo} height={70} width={70} alt="Whitepapper" className="fadeInUp" />
 
         {authMode === "login" ? (
-          <h1 className="text-[20px]">Welcome back</h1>
+          <h1 className="text-xl sm:text-lg fadeInUp" style={{ animationDelay: "0.1s" }}>Welcome back</h1>
         ) : (
-          <h1 className="text-[20px]">Join Whitepapper</h1>
+          <h1 className="text-xl sm:text-lg fadeInUp" style={{ animationDelay: "0.1s" }}>Join Whitepapper</h1>
         )}
 
         <div className="flex w-full flex-col gap-3">
@@ -446,20 +444,22 @@ export default function LoginPage() {
             />
           )}
 
-          <p className="text-center text-[12px] opacity-[0.7]">or</p>
+          <p className="hidden sm:block text-center text-[12px] opacity-[0.7]">or</p>
 
-          <Button
-            onClick={handleGoogleAuthClick}
-            loading={oauthLoading}
-            disabled={isAnyLoading}
-            size="lg"
-            variant="ghost"
-            className="fadeInUp w-full"
-          >
-            <Image src={googleLogo} alt="Google" height={17} width={17} className="mr-[10px]" /> Continue with Google
-          </Button>
+          <div className="fadeInUp w-full">
+            <Button
+              onClick={handleGoogleAuthClick}
+              loading={oauthLoading}
+              disabled={isAnyLoading}
+              size="lg"
+              variant="ghost"
+              className="w-full gap-0"
+            >
+              <Image src={googleLogo} alt="Google" height={17} width={17} className="mr-[10px]" /> Continue with Google
+            </Button>
+          </div>
 
-          <div className="flex justify-center text-[14px] opacity-[0.9] underline select-none mt-2">
+          <div className="flex justify-center text-[14px] opacity-[0.9] underline select-none sm:mt-2 fadeInUp"  style={{ animationDelay: "0.3s" }}>
             {authMode === "login" ? (
               <p
                 onClick={() => {

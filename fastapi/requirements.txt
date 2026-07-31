@@ -21,5 +21,8 @@ alembic==1.14.1
 # Cloudflare R2
 boto3==1.37.0
 
-# ORM + Validation (Pydantic + SQLAlchemy combined)
+# schema + entity models
 sqlmodel==0.0.22
+
+# image compress
+Pillow==12.1.1

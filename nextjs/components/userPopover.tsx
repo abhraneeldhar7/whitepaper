@@ -13,8 +13,8 @@ import Image from "next/image";
 const UserAvatar = ({ user, size, className }: { user: User, size: number, className?: string }) => {
     const initial = user.name[0].toUpperCase()
     return (
-        <div className={cn(`relative overflow-hidden w-[${size}px] h-[${size}px] rounded-[50%] shrink-0 group transition-all duration-slow`, className)}>
-            <div className="absolute z-[2] h-[140%] w-[14px] bg-[white]/30 blur-[1px] top-[20%] left-[-40%] group-hover:left-[110%] group-hover:top-[-50%] rotate-[-40deg] transition-all duration-[300ms]"/>
+        <div className={cn(`relative overflow-hidden w-[${size}px] h-[${size}px] rounded-[50%] shrink-0 group transition-all duration-default`, className)}>
+            <div className="absolute z-[2] h-[140%] w-[14px] bg-[white]/30 blur-[1px] top-[20%] left-[-40%] group-hover:left-[110%] group-hover:top-[-50%] rotate-[-40deg] transition-all duration-default"/>
             {user.avatarUrl ?
                 <Image className="rounded-[50%]" height={size} width={size} src={user.avatarUrl} alt={initial} /> :
                 <div className="bg-muted w-full h-full flex items-center justify-center text-md">
@@ -35,7 +35,7 @@ export default function UserPopover() {
             <PopoverTrigger asChild disabled={!user}>
                 {user ?
                     <div className="cursor-pointer select-none relative size-[30px] group">
-                        <div className={`absolute top-[50%] left-[50%] translate-y-[-50%] translate-x-[-50%] z-[2] flex items-center justify-center bg-card h-full w-full border ${open ? "opacity-[100]" : "opacity-0"} rounded-full transition-all duration-slow`}>
+                        <div className={`absolute top-[50%] left-[50%] translate-y-[-50%] translate-x-[-50%] z-[2] flex items-center justify-center bg-card h-full w-full border ${open ? "opacity-[100]" : "opacity-0"} rounded-full transition-all duration-default`}>
                             <XIcon size={14} />
                         </div>
                         <UserAvatar user={user} size={30} className={`${open ? "opacity-0" : "opacity-[100]"}`} />

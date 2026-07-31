@@ -1,0 +1,35 @@
+screen 1:
+banner, img, name, slug(autocompplete from name then collision check), description, visibility switch.
+
+screen 2:
+members invite
+
+
+--table: member_invitations--
+inviteId:str,
+workspaceId:str
+entityType:"workspace"|"project"|"collection"|"paper"
+entityId:str,
+role:str,
+status:"pending"|"accepted"|"rejected"|"expired",
+
+memberId:str|null,
+memberEmail:str|null,
+
+invitedById:str|null,
+invitedBySystem:boolean,
+invitedAt:datetime,
+expiresAt:datetime
+
+notificationId:str
+
+---
+
+--table: notifications--
+notificationId: str,
+userId: str,
+type:"invite"|"other",
+message:str,
+link:str|null,
+isRead:boolean,
+createdAt:datetime

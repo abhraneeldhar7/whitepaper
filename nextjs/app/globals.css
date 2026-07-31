@@ -22,11 +22,11 @@
   --site-max: 1200px;
   --content-max: 700px;
 
-  --text-xs: 0.8rem;
+  --text-xs: 0.74rem;
   /* 12px - captions, timestamps */
-  --text-sm: 0.9rem;
+  --text-sm: 0.84rem;
   /* 14px - buttons, UI labels, nav */
-  --text-base: 0.95rem;
+  --text-base: 1rem;
   /* 16px - body, reading text */
 
   --text-md: 1.1rem;
@@ -50,9 +50,9 @@
   --radius-sm: 8px;
   --radius-md: 12px;
 
-  --duration-fast: 200ms;
-  --duration-default: 450ms;
-  --duration-slow: 600ms;
+  --transition-duration-fast: 200ms;
+  --transition-duration-default: 350ms;
+  --transition-duration-slow: 600ms;
 }
 
 .site-max {
@@ -117,14 +117,14 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(94.309% 0.00011 271.152);
+  --secondary: oklch(96.416% 0.00011 271.152);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
+  --border: #cecece;
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.87 0 0);
@@ -214,4 +214,8 @@
 
 html {
   font-size: 16px;
+}
+
+body {
+  overflow: hidden;
 }

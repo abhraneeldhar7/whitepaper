@@ -17,7 +17,14 @@ from app.services.project import (
 )
 from app.services.workspace import get_workspace_by_id
 from app.shared.plan_limits import PLAN_LIMITS
+from app.shared.constants import (
+    BANNER_MAX_HEIGHT_PIXELS,
+    BANNER_MAX_WIDTH_PIXELS,
+    LOGO_MAX_HEIGHT_PIXELS,
+    LOGO_MAX_WIDTH_PIXELS,
+)
 from app.shared.schema import Visibility
+from app.utils.images import compress_image
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -90,10 +97,18 @@ async def create_project_endpoint(
     if logo and logo.filename:
         key = f"projects/{project_id}/logo"
         contents = await logo.read()
+        fmt = (logo.content_type or "").split("/")[-1].upper() or "PNG"
+        compressed = compress_image(
+            contents,
+            max_width=LOGO_MAX_WIDTH_PIXELS,
+            max_height=LOGO_MAX_HEIGHT_PIXELS,
+            crop=True,
+            output_format=fmt,
+        )
         r2_client.put_object(
             Bucket=settings.R2_BUCKET_NAME,
             Key=key,
-            Body=contents,
+            Body=compressed,
             ContentType=logo.content_type,
         )
         logo_url = f"{settings.R2_PUBLIC_URL}/{key}?t={cache_buster}"
@@ -102,10 +117,17 @@ async def create_project_endpoint(
     if banner and banner.filename:
         key = f"projects/{project_id}/banner"
         contents = await banner.read()
+        fmt = (banner.content_type or "").split("/")[-1].upper() or "PNG"
+        compressed = compress_image(
+            contents,
+            max_width=BANNER_MAX_WIDTH_PIXELS,
+            max_height=BANNER_MAX_HEIGHT_PIXELS,
+            output_format=fmt,
+        )
         r2_client.put_object(
             Bucket=settings.R2_BUCKET_NAME,
             Key=key,
-            Body=contents,
+            Body=compressed,
             ContentType=banner.content_type,
         )
         banner_url = f"{settings.R2_PUBLIC_URL}/{key}?t={cache_buster}"

@@ -16,6 +16,17 @@ export interface ProjectScreenData {
   papers: PaperWithRole[];
 }
 
+export interface CreateProjectResponse {
+  project: Project;
+}
+
+export function createProject(
+  formData: FormData,
+  client: ApiClient = apiClient,
+): Promise<CreateProjectResponse> {
+  return client.post<CreateProjectResponse>(PRIVATE.PROJECT_CREATE, { body: formData });
+}
+
 export function fetchProjectScreen(
   projectId: string,
   client: ApiClient = apiClient,

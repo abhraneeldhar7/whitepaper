@@ -9,6 +9,11 @@ const isPublicAuthRoute = createRouteMatcher([
   "/welcome(.*)",
 ]);
 
+const authorizedParties = (process.env.CLERK_AUTHORIZED_PARTIES || "")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
+
 export default clerkMiddleware(async (auth, req) => {
   const { redirectToSignIn, isAuthenticated } = await auth();
   const url = new URL(req.url);
@@ -22,7 +27,7 @@ export default clerkMiddleware(async (auth, req) => {
     const redirectTarget = searchParams.get("redirect_url") || "/dashboard";
     return Response.redirect(new URL(redirectTarget, req.url));
   }
-});
+}, { authorizedParties });
 
 export const config = {
   matcher: [

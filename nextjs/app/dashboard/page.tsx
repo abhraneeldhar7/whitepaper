@@ -10,7 +10,7 @@ import MembersTab from "@/components/dashboard/tabs/members-tab";
 import PlaceholderTab from "@/components/dashboard/placeholder-tab";
 import NoWorkspace from "@/components/dashboard/no-workspace";
 
-const TABS = ["Overview", "Members", "Plan", "Settings", "How to Use"];
+const TABS = ["Overview", "Members", "Plan", "Settings"];
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("overview");
