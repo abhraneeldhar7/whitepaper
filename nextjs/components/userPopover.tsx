@@ -14,7 +14,7 @@ const UserAvatar = ({ user, size, className }: { user: User, size: number, class
     const initial = user.name[0].toUpperCase()
     return (
         <div className={cn(`relative overflow-hidden w-[${size}px] h-[${size}px] rounded-[50%] shrink-0 group transition-all duration-default`, className)}>
-            <div className="absolute z-[2] h-[140%] w-[14px] bg-[white]/30 blur-[1px] top-[20%] left-[-40%] group-hover:left-[110%] group-hover:top-[-50%] rotate-[-40deg] transition-all duration-default"/>
+            <div className="absolute z-[2] h-[140%] w-[14px] bg-[white]/30 blur-[1px] top-[20%] left-[-40%] group-hover:left-[110%] group-hover:top-[-50%] rotate-[-40deg] transition-all duration-fast"/>
             {user.avatarUrl ?
                 <Image className="rounded-[50%]" height={size} width={size} src={user.avatarUrl} alt={initial} /> :
                 <div className="bg-muted w-full h-full flex items-center justify-center text-md">
