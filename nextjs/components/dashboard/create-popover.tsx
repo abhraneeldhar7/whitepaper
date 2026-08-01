@@ -24,13 +24,13 @@ export default function DashboardCreateButton({ onCreateProject }: DashboardCrea
 
             <div className={`fixed inset-0 bg-black/80 backdrop-blur-xs transition-all ${mobileMenuOpen ? "opacity-100 z-[50]" : "opacity-0 z-[-1]"}`} onClick={() => { setMobileMenuOpen(false) }} />
 
-            <div className="fixed bottom-5 right-5 z-[50] flex flex-col gap-5 items-end">
-                <Button variant="secondary" className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><StickyNoteIcon />  New paper</Button>
-                <Button variant="secondary" onClick={() => { onCreateProject?.(); setMobileMenuOpen(false); }} className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><FolderIcon />  New project</Button>
-                <Button variant="secondary" className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><FilePlusCornerIcon />  Import paper</Button>
+            <div className="fixed bottom-5 right-5 z-[50] flex flex-col gap-4 items-end">
+                <Button variant="secondary" size="lg" className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><StickyNoteIcon />  New paper</Button>
+                <Button variant="secondary" size="lg" onClick={() => { onCreateProject?.(); setMobileMenuOpen(false); }} className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><FolderIcon />  New project</Button>
+                <Button variant="secondary" size="lg" className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><FilePlusCornerIcon />  Import paper</Button>
 
                 <Button onClick={() => { setMobileMenuOpen(!mobileMenuOpen) }} size="icon-lg" className="rounded-full p-0">
-                    <PlusIcon className={`transition-all ${mobileMenuOpen ? "rotate-[90deg]" : "rotate-[0deg]"}`} />
+                    <PlusIcon className={`transition-all ${mobileMenuOpen ? "rotate-[45deg]" : "rotate-[0deg]"}`} />
                 </Button>
             </div>
         </> :

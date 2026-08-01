@@ -29,7 +29,7 @@
   --text-base: 1rem;
   /* 16px - body, reading text */
 
-  --text-md: 1.1rem;
+  --text-md: 1.2rem;
 
   --text-lg: 1.25rem;
   /* 20px - card titles, dialog headings */
@@ -215,8 +215,4 @@
 
 html {
   font-size: 15px;
-}
-
-body {
-  overflow: hidden;
 }

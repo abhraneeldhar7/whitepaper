@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -16,17 +16,14 @@ function normalize(tab: string) {
 export default function DashboardTabs({ tabs, onTabChange }: DashboardTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const onTabChangeRef = useRef(onTabChange);
-  onTabChangeRef.current = onTabChange;
 
-  const currentTab = searchParams.get("tab") || normalize(tabs[0]);
-
-  useEffect(() => {
-    onTabChangeRef.current(currentTab);
-  }, [currentTab]);
+  const defaultTab = searchParams.get("tab") || normalize(tabs[0]);
+  const [currentTab, setCurrentTab] = useState(defaultTab);
 
   const handleClick = (tab: string) => {
     const normalized = normalize(tab);
+    setCurrentTab(normalized);
+    onTabChange(normalized);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", normalized);
     router.push(`?${params.toString()}`);

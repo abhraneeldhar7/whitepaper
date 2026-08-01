@@ -56,7 +56,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
         return res.workspaceId;
       } catch (e) {
-        console.log(e)
         if (e instanceof ApiError) {
           const msg = JSON.parse(e.message)?.detail;
 

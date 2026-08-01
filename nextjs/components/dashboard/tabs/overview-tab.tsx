@@ -36,9 +36,8 @@ export default function OverviewTab({ loading = false, projects = [], collection
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
 
   if (loading) return <OverviewTabSkeleton />;
-  console.log("proojects: ", projects)
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 h-full flex-1 flex flex-col">
       <div className="flex gap-2 items-center justify-end">
         <div className="border flex gap-1 p-[3px] h-fit rounded-sm">
           <Button size="icon" className="rounded-xs" variant="secondary"><LayoutGridIcon /></Button>
@@ -51,11 +50,13 @@ export default function OverviewTab({ loading = false, projects = [], collection
 
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="min-h-[500px] relative">
-
-            <div className="inset-0 absolute z-[2] bg-primary/10 flex items-center justify-center rounded-lg">
-              <p className="text-md flex items-center">
-                <span className="md:hidden inline-flex items-center mr-1"><FingerprintIcon className="inline opacity-70 mr-1" size={20} /> Tap and hold</span>
+          <div className="flex-1 w-full relative">
+            <style>{`@keyframes hintFade { 0%,80% {opacity:1} 100% {opacity:0} }`}</style>
+            <div className="inset-0 absolute z-[2] bg-primary/5 flex items-center justify-center rounded-lg pointer-events-none" style={{
+              animation: "hintFade 2s ease-out forwards", animationDuration: "2s", animationDelay: "300ms"
+            }}>
+              <p className="text-md text-foreground/80 flex items-center">
+                < span className="md:hidden inline-flex items-center mr-1"><FingerprintIcon className="inline opacity-70 mr-1" size={20} /> Tap and hold</span>
                 <span className="hidden md:inline-flex items-center mr-1"><MouseRightIcon className="inline opacity-70 mr-1" size={20} /> Right click</span>
                 for menu</p>
             </div>
@@ -95,7 +96,7 @@ export default function OverviewTab({ loading = false, projects = [], collection
               </div>
             )}
           </div>
-        </ContextMenuTrigger>
+        </ContextMenuTrigger >
         <ContextMenuContent>
           <ContextMenuItem>
             <StickyNoteIcon /> New paper
@@ -111,7 +112,7 @@ export default function OverviewTab({ loading = false, projects = [], collection
             <FilePlusCornerIcon /> Import paper
           </ContextMenuItem>
         </ContextMenuContent>
-      </ContextMenu>
-    </div>
+      </ContextMenu >
+    </div >
   );
 }

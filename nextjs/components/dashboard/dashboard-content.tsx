@@ -14,7 +14,7 @@ export default function DashboardContent({ tabs, onTabChange, children }: Dashbo
     <div className="p-1 md:p-2 pt-0 md:pt-0 w-full h-full flex-1 flex flex-col">
       <div className="border rounded-md bg-background w-full h-full flex-1 flex flex-col">
         <DashboardTabs tabs={tabs} onTabChange={onTabChange} />
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto flex flex-col">
           {children}
         </div>
       </div>
