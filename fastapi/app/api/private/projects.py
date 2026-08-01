@@ -1,8 +1,10 @@
 import time
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.database import db
@@ -23,7 +25,7 @@ from app.shared.constants import (
     LOGO_MAX_HEIGHT_PIXELS,
     LOGO_MAX_WIDTH_PIXELS,
 )
-from app.shared.schema import Visibility
+from app.shared.schema import Project, Visibility
 from app.utils.images import compress_image
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -44,6 +46,26 @@ async def get_project(
         raise HTTPException(status_code=403, detail="Access denied")
 
     return {"project": project, "role": role}
+
+
+@router.get("/check-slug")
+async def check_slug(
+    workspaceId: str = Query(...),
+    slug: str = Query(...),
+    projectId: Optional[str] = Query(None),
+    session: AsyncSession = Depends(db.get_db),
+    auth: VerifiedRequest = Depends(get_verified_request),
+) -> dict:
+    result = await session.execute(
+        select(Project).where(
+            Project.workspaceId == workspaceId,
+            Project.publicSlug == slug,
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if existing and existing.projectId != projectId:
+        return {"available": False}
+    return {"available": True}
 
 
 @router.post("/create")

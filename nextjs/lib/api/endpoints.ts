@@ -11,6 +11,7 @@ export const PRIVATE = {
   COLLECTION_PAPERS: "/private/dashboard/collections",
   PROJECT_BY_ID: "/private/projects",
   PROJECT_CREATE: "/private/projects/create",
+  PROJECT_CHECK_SLUG: "/private/projects/check-slug",
   COLLECTION_BY_ID: "/private/collections",
   PAPER_BY_ID: "/private/papers/id",
   SCREEN_WORKSPACE: "/private/screen/workspace",

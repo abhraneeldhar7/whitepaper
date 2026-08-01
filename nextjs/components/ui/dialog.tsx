@@ -106,7 +106,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "grid grid-cols-2 sm:flex jsutify-between absolute bottom-0 w-full p-2 border-t gap-2",
+        "grid grid-cols-2 jsutify-between absolute bottom-0 w-full p-2 border-t gap-2",
         className
       )}
       {...props}

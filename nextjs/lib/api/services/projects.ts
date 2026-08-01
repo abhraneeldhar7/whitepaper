@@ -27,6 +27,17 @@ export function createProject(
   return client.post<CreateProjectResponse>(PRIVATE.PROJECT_CREATE, { body: formData });
 }
 
+export function checkProjectSlug(
+  workspaceId: string,
+  slug: string,
+  projectId?: string,
+  client: ApiClient = apiClient,
+): Promise<{ available: boolean }> {
+  const query: Record<string, string> = { workspaceId, slug };
+  if (projectId) query.projectId = projectId;
+  return client.get<{ available: boolean }>(PRIVATE.PROJECT_CHECK_SLUG, { query });
+}
+
 export function fetchProjectScreen(
   projectId: string,
   client: ApiClient = apiClient,
