@@ -51,7 +51,7 @@ export default function OverviewTab({ loading = false, projects = [], collection
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div className="flex-1 w-full relative">
-            <style>{`@keyframes hintFade { 0%,80% {opacity:1} 100% {opacity:0} }`}</style>
+            {/* <style>{`@keyframes hintFade { 0%,80% {opacity:1} 100% {opacity:0} }`}</style>
             <div className="inset-0 absolute z-[2] bg-primary/5 flex items-center justify-center rounded-lg pointer-events-none" style={{
               animation: "hintFade 2s ease-out forwards", animationDuration: "2s", animationDelay: "300ms"
             }}>
@@ -59,7 +59,7 @@ export default function OverviewTab({ loading = false, projects = [], collection
                 < span className="md:hidden inline-flex items-center mr-1"><FingerprintIcon className="inline opacity-70 mr-1" size={20} /> Tap and hold</span>
                 <span className="hidden md:inline-flex items-center mr-1"><MouseRightIcon className="inline opacity-70 mr-1" size={20} /> Right click</span>
                 for menu</p>
-            </div>
+            </div> */}
 
             {projects?.length > 0 && (
               <div className="space-y-3">

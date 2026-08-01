@@ -12,26 +12,20 @@ import PlaceholderTab from "@/components/dashboard/placeholder-tab";
 
 const TABS = ["Overview", "Members", "Settings", "How to Use"];
 
-export default function ProjectPage() {
+export default function CollectionPage() {
   const params = useParams();
-  const projectId = params["project-Id"] as string;
+  const collectionId = params["collection-Id"] as string;
   const [activeTab, setActiveTab] = useState("overview");
-  const { resolveProjectScreen } = useDashboard();
+  const { resolveCollectionScreen } = useDashboard();
 
-  
   useEffect(() => {
-    resolveProjectScreen(projectId);
-  }, [projectId]);
-  
-  const projectScreenMap = useDashboardStore((s) => s.projectScreenMap);
-  const collections = useDashboardStore((s) => s.collections);
+    resolveCollectionScreen(collectionId);
+  }, [collectionId]);
+
+
+  const collectionScreenMap = useDashboardStore((s) => s.collectionScreenMap);
   const papers = useDashboardStore((s) => s.papers);
-  const screenMap = projectScreenMap.find((psc) => psc.projectId === projectId);
-
-  const overviewCollections = !screenMap
-    ? []
-    : collections.filter((c) => screenMap.collectionIdArray.includes(c.data.collectionId));
-
+  const screenMap = collectionScreenMap.find((csc) => csc.collectionId === collectionId);
   const overviewPapers = !screenMap
     ? []
     : papers.filter((p) => screenMap.paperIdArray.includes(p.data.paperId));
@@ -39,9 +33,7 @@ export default function ProjectPage() {
   return (
     <DashboardRoot ribbon={<DashboardRibbon />}>
       <DashboardContent tabs={TABS} onTabChange={setActiveTab}>
-        {activeTab === "overview" && (
-          <OverviewTab loading={(!screenMap || screenMap.isLoading)} collections={overviewCollections} papers={overviewPapers} />
-        )}
+        {activeTab === "overview" && (<OverviewTab loading={(!screenMap || screenMap.isLoading)} papers={overviewPapers} />)}
         {activeTab === "members" && <MembersTab />}
         {activeTab === "settings" && <PlaceholderTab name="Settings" />}
         {activeTab === "how_to_use" && <PlaceholderTab name="How to Use" />}
