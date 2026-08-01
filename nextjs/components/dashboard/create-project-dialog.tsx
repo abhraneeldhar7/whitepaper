@@ -131,7 +131,7 @@ export default function CreateProjectDialog({ open, onClose }: CreateProjectDial
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{step === "name" ? "Create Project" : "Give Identity"}</DialogTitle>
+          <DialogTitle>{step === "name" ? "Create Project" : "Project Identity"}</DialogTitle>
         </DialogHeader>
 
         <div className="flex">
@@ -163,7 +163,7 @@ export default function CreateProjectDialog({ open, onClose }: CreateProjectDial
                 <div className="space-y-1 sm:flex-1">
                   <Label htmlFor="slug">Public slug</Label>
                   <Input id="slug" placeholder="my-project" value={publicSlug} onChange={(e) => setPublicSlug(e.target.value)} />
-                  <div className="h-[12px] mt-1">
+                  <div className="h-[15px] mt-1">
                     {slugStatus === "checking" && (
                       <p className="text-xs text-muted-foreground"><LoaderCircle className="inline animate-spin size-[12px] mr-1" /> Checking availability...</p>
                     )}
