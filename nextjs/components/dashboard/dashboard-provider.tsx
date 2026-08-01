@@ -275,6 +275,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    const state = useDashboardStore.getState();
+    if (state.activeWorkspace && !state.isLoadingActiveWorkspace) {
+      return;
+    }
+
     const queryParamWsId = searchParams.get("workspaceId");
     const lastVisitedWorkspaceId = localStorage.getItem(LAST_VISITED_WORKSPACEID_KEY);
 
