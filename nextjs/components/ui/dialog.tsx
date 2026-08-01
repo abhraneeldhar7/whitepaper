@@ -28,7 +28,9 @@ function DialogPortal({
 function DialogClose({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Close>) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+  return <DialogPrimitive.Close data-slot="dialog-close" asChild>
+    <Button variant="ghost" {...props}></Button>
+  </DialogPrimitive.Close>
 }
 
 function DialogOverlay({
@@ -128,7 +130,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("font-heading text-sm leading-none font-medium", className)}
+      className={cn("font-heading text-base leading-none font-medium", className)}
       {...props}
     />
   )

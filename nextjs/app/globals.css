@@ -52,7 +52,7 @@
 
   --transition-duration-fast: 200ms;
   --transition-duration-default: 350ms;
-  --transition-duration-slow: 600ms;
+  --transition-duration-slow: 500ms;
 }
 
 .site-max {

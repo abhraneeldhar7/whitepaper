@@ -92,9 +92,9 @@ export default function OverviewTab({ loading = false, projects = [], collection
         <div>
           <h3 className="text-lg font-medium mb-3">Projects</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {projects.map((project) => (
+            {projects.map((project, index) => (
               <div
-                key={project.projectId}
+                key={index}
                 className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
               >
                 <p className="font-medium">{project.name}</p>
@@ -110,9 +110,9 @@ export default function OverviewTab({ loading = false, projects = [], collection
         <div>
           <h3 className="text-lg font-medium mb-3">Collections</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {collections.map((collection) => (
+            {collections.map((collection, index) => (
               <div
-                key={collection.collectionId}
+                key={index}
                 className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
               >
                 <p className="font-medium">{collection.name}</p>
@@ -128,9 +128,9 @@ export default function OverviewTab({ loading = false, projects = [], collection
         <div>
           <h3 className="text-lg font-medium mb-3">Papers</h3>
           <div className="space-y-2">
-            {papers.map((paper) => (
+            {papers.map((paper, index) => (
               <div
-                key={paper.paperId}
+                key={index}
                 className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
               >
                 <p className="font-medium">{paper.title}</p>
