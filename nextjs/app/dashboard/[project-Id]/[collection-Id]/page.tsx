@@ -28,7 +28,7 @@ export default function CollectionPage() {
   const screenMap = collectionScreenMap.find((csc) => csc.collectionId === collectionId);
   const overviewPapers = !screenMap
     ? []
-    : papers.filter((p) => screenMap.paperIdArray.includes(p.paperId));
+    : papers.filter((p) => screenMap.paperIdArray.includes(p.data.paperId));
 
   return (
     <DashboardRoot ribbon={<DashboardRibbon />}>

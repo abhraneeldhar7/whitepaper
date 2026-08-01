@@ -16,17 +16,17 @@ export default function MembersTab() {
         return "Workspace";
       case "project":
         return (
-          projects.find((p) => p.projectId === entityId)?.name ??
+          projects.find((p) => p.data.projectId === entityId)?.data.name ??
           "Unknown Project"
         );
       case "collection":
         return (
-          collections.find((c) => c.collectionId === entityId)?.name ??
+          collections.find((c) => c.data.collectionId === entityId)?.data.name ??
           "Unknown Collection"
         );
       case "paper":
         return (
-          papers.find((p) => p.paperId === entityId)?.title ??
+          papers.find((p) => p.data.paperId === entityId)?.data.title ??
           "Unknown Paper"
         );
       default:

@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FilePlusCornerIcon, FolderIcon, LayoutGridIcon, ListIcon, RotateCcw, StickyNoteIcon } from "lucide-react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
+import FolderVisuals from "@/components/ui/folders/folderVisuals";
+import ProjectCard from "@/components/ui/folders/ProjectCard";
+import { Label } from "@/components/ui/label";
 
 interface OverviewTabProps {
   loading?: boolean;
@@ -31,7 +34,7 @@ export default function OverviewTab({ loading = false, projects = [], collection
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
 
   if (loading) return <OverviewTabSkeleton />;
-
+  console.log("proojects: ", projects)
   return (
     <div className="p-4 space-y-6">
       <div className="flex gap-2 items-center justify-end">
@@ -48,26 +51,18 @@ export default function OverviewTab({ loading = false, projects = [], collection
 
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          {/* <div className="w-full min-h-[500px] bg-[red]">
-            {projects.length > 0 && (
+          <div className="w-full min-h-[500px]">
+            {projects?.length > 0 && (
               <div>
-                <h3 className="text-lg font-medium mb-3">Projects</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {projects.map((project) => (
-                    <div
-                      key={project.projectId}
-                      className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
-                    >
-                      <p className="font-medium">{project.name}</p>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {project.description}
-                      </p>
-                    </div>
+                <Label>Projects</Label>
+                <div className="grid grid-cols-4">
+                  {projects.map((project, index) => (
+                    <ProjectCard key={index} logoUrl={project.data.logoUrl || ""} folderName={project.data.name} timeAgo="20" />
                   ))}
                 </div>
               </div>
             )}
-          </div> */}
+          </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem>
@@ -87,7 +82,6 @@ export default function OverviewTab({ loading = false, projects = [], collection
       </ContextMenu>
 
 
-
       {projects.length > 0 && (
         <div>
           <h3 className="text-lg font-medium mb-3">Projects</h3>
@@ -97,9 +91,9 @@ export default function OverviewTab({ loading = false, projects = [], collection
                 key={index}
                 className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
               >
-                <p className="font-medium">{project.name}</p>
+                <p className="font-medium">{project.data.name}</p>
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                  {project.description}
+                  {project.data.description}
                 </p>
               </div>
             ))}
@@ -115,9 +109,9 @@ export default function OverviewTab({ loading = false, projects = [], collection
                 key={index}
                 className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
               >
-                <p className="font-medium">{collection.name}</p>
+                <p className="font-medium">{collection.data.name}</p>
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                  {collection.description}
+                  {collection.data.description}
                 </p>
               </div>
             ))}
@@ -133,7 +127,7 @@ export default function OverviewTab({ loading = false, projects = [], collection
                 key={index}
                 className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
               >
-                <p className="font-medium">{paper.title}</p>
+                <p className="font-medium">{paper.data.title}</p>
               </div>
             ))}
           </div>

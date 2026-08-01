@@ -9,30 +9,31 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import ContainerLogo from "@/components/container-logo";
-import type { Workspace, Project, Collection } from "@/lib/types";
+import type { Workspace } from "@/lib/types";
+import type { ProjectWithRole, CollectionWithRole } from "@/lib/api/services/dashboard";
 import { Check } from "lucide-react";
 
 function getEntityId(
-  entity: Workspace | Project | Collection,
+  entity: Workspace | ProjectWithRole | CollectionWithRole,
   entityType: "workspace" | "project" | "collection",
 ): string {
   switch (entityType) {
     case "workspace":
       return (entity as Workspace).workspaceId;
     case "project":
-      return (entity as Project).projectId;
+      return (entity as ProjectWithRole).data.projectId;
     case "collection":
-      return (entity as Collection).collectionId;
+      return (entity as CollectionWithRole).data.collectionId;
   }
 }
 
-function getEntityName(entity: Workspace | Project | Collection): string {
+function getEntityName(entity: Workspace | ProjectWithRole | CollectionWithRole): string {
   if ("workspaceName" in entity) return entity.workspaceName;
-  return entity.name;
+  return entity.data.name;
 }
 
-function getEntityLogoUrl(entity: Workspace | Project | Collection): string | null {
-  if ("logoUrl" in entity) return entity.logoUrl ?? null;
+function getEntityLogoUrl(entity: Workspace | ProjectWithRole | CollectionWithRole): string | null {
+  if ("data" in entity && "logoUrl" in entity.data) return entity.data.logoUrl ?? null;
   return null;
 }
 
@@ -47,18 +48,18 @@ type EntitySelectorProps =
   }
   | {
     imageUrl?: string | null;
-    entity: Project | null;
+    entity: ProjectWithRole | null;
     entityType: "project";
-    items: Project[];
-    onSelect: (entity: Project) => void;
+    items: ProjectWithRole[];
+    onSelect: (entity: ProjectWithRole) => void;
     disabled?: boolean;
   }
   | {
     imageUrl?: string | null;
-    entity: Collection | null;
+    entity: CollectionWithRole | null;
     entityType: "collection";
-    items: Collection[];
-    onSelect: (entity: Collection) => void;
+    items: CollectionWithRole[];
+    onSelect: (entity: CollectionWithRole) => void;
     disabled?: boolean;
   };
 
@@ -90,7 +91,7 @@ export default function EntitySelector({
             imageUrl={imageUrl ?? getEntityLogoUrl(entity) ?? null}
             name={getEntityName(entity)}
           />
-          <div className="text-foreground/80 group-hover:text-foreground text-sm h-full flex items-center truncate rounded-xs transition-all">{getEntityName(entity)}</div>
+          <div className="text-foreground/80 group-hover:text-foreground text-base h-full flex items-center truncate rounded-xs transition-all">{getEntityName(entity)}</div>
         </div>
       </SelectTrigger>
       <SelectContent className="min-w-48" position="popper">

@@ -1,0 +1,1 @@
+// in here create the funcitons needed to display the time from the database datetime format. one thing i need is the X m ago, just reutrn the X and the m, h, d, w, mo, y. to be used in overviewtab for updatedAt time of things before pushing in the projectcard.  jsut do this for now.

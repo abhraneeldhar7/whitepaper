@@ -2,8 +2,9 @@ import { apiClient, type ApiClient } from "@/lib/api/api-client";
 import { PRIVATE } from "@/lib/api/endpoints";
 import type { Paper } from "@/lib/types";
 
-export interface PaperWithRole extends Paper {
+export interface PaperWithRole {
   role: string;
+  data: Paper;
 }
 
 export function fetchPaperById(
@@ -13,5 +14,5 @@ export function fetchPaperById(
   return client.get<{ paper: Paper, role: string } | null>(
     PRIVATE.PAPER_BY_ID,
     { query: { paperId } },
-  ).then(r => r ? { ...r.paper, role: r.role } as PaperWithRole : null);
+  ).then(r => r ? { role: r.role, data: r.paper } as PaperWithRole : null);
 }

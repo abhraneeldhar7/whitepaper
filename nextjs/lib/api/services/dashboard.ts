@@ -2,16 +2,19 @@ import { apiClient, type ApiClient } from "@/lib/api/api-client";
 import { PRIVATE } from "@/lib/api/endpoints";
 import type { Project, Collection, Paper, MemberWithUser } from "@/lib/types";
 
-export interface ProjectWithRole extends Project {
+export interface ProjectWithRole {
   role: string;
+  data: Project;
 }
 
-export interface CollectionWithRole extends Collection {
+export interface CollectionWithRole {
   role: string;
+  data: Collection;
 }
 
-export interface PaperWithRole extends Paper {
+export interface PaperWithRole {
   role: string;
+  data: Paper;
 }
 
 export function fetchDashboardProjects(

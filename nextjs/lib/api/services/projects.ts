@@ -3,12 +3,14 @@ import { PRIVATE } from "@/lib/api/endpoints";
 import type { Project, Collection } from "@/lib/types";
 import type { PaperWithRole } from "@/lib/api/services/workspace";
 
-export interface ProjectWithRole extends Project {
+export interface ProjectWithRole {
   role: string;
+  data: Project;
 }
 
-export interface CollectionWithRole extends Collection {
+export interface CollectionWithRole {
   role: string;
+  data: Collection;
 }
 
 export interface ProjectScreenData {
@@ -54,5 +56,5 @@ export function fetchProjectById(
   return client.get<{ project: Project, role: string } | null>(
     PRIVATE.PROJECT_BY_ID,
     { query: { projectId } },
-  ).then(r => r ? { ...r.project, role: r.role } as ProjectWithRole : null);
+  ).then(r => r ? { role: r.role, data: r.project } as ProjectWithRole : null);
 }

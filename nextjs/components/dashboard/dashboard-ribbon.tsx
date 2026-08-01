@@ -47,32 +47,32 @@ export default function DashboardRibbon() {
     }
   }, [projectId, collectionId, activeWorkspace]);
 
-  const activeProject = projectId ? projects.find((p) => p.projectId === projectId) ?? null : null;
-  const activeCollection = collectionId ? collections.find((c) => c.collectionId === collectionId) ?? null : null;
+  const activeProject = projectId ? projects.find((p) => p.data.projectId === projectId) ?? null : null;
+  const activeCollection = collectionId ? collections.find((c) => c.data.collectionId === collectionId) ?? null : null;
 
   const siblingProjects = workspaceScreenMap
-    ? projects.filter((p) => workspaceScreenMap.projectIdArray.includes(p.projectId))
+    ? projects.filter((p) => workspaceScreenMap.projectIdArray.includes(p.data.projectId))
     : [];
 
   const siblingCollections = (() => {
     if (!projectId) return [];
     const map = projectScreenMapArr.find((m) => m.projectId === projectId);
     if (!map) return [];
-    return collections.filter((c) => map.collectionIdArray.includes(c.collectionId));
+    return collections.filter((c) => map.collectionIdArray.includes(c.data.collectionId));
   })();
 
   if (collectionId) {
     if (!activeProject || !activeCollection) return <RibbonItemSkeleton />;
     return (
       <div className="flex items-center gap-2">
-        <ContainerLogo imageUrl={activeProject.logoUrl} name={activeProject.name} />
+        <ContainerLogo imageUrl={activeProject.data.logoUrl} name={activeProject.data.name} />
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
         <EntitySelector
           imageUrl={null}
           entity={activeCollection}
           entityType="collection"
           items={siblingCollections}
-          onSelect={(entity) => router.push(`/dashboard/${entity.projectId}/${entity.collectionId}`)}
+          onSelect={(entity) => router.push(`/dashboard/${entity.data.projectId}/${entity.data.collectionId}`)}
         />
       </div>
     );
@@ -85,11 +85,11 @@ export default function DashboardRibbon() {
         <ContainerLogo imageUrl={null} name={activeWorkspace.workspaceName} />
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
         <EntitySelector
-          imageUrl={activeProject.logoUrl}
+          imageUrl={activeProject.data.logoUrl}
           entity={activeProject}
           entityType="project"
           items={siblingProjects}
-          onSelect={(entity) => router.push(`/dashboard/${entity.projectId}`)}
+          onSelect={(entity) => router.push(`/dashboard/${entity.data.projectId}`)}
         />
       </div>
     );

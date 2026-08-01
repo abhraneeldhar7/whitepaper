@@ -101,14 +101,14 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const updated = [...s.projects];
       const newIds: string[] = [];
       for (const p of incoming) {
-        const idx = updated.findIndex((x) => x.projectId === p.projectId);
+        const idx = updated.findIndex((x) => x.data.projectId === p.data.projectId);
         if (idx >= 0) updated[idx] = p;
-        else { updated.push(p); newIds.push(p.projectId); }
+        else { updated.push(p); newIds.push(p.data.projectId); }
       }
       const wsm = s.workspaceScreenMap;
       return {
         projects: updated,
-        workspaceScreenMap: wsm && newIds.length > 0 && incoming.some((p) => p.workspaceId === wsm.workspaceId)
+        workspaceScreenMap: wsm && newIds.length > 0 && incoming.some((p) => p.data.workspaceId === wsm.workspaceId)
           ? { ...wsm, projectIdArray: [...new Set([...wsm.projectIdArray, ...newIds])] }
           : wsm,
       };
@@ -119,13 +119,13 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const updated = [...s.collections];
       let psm = s.projectScreenMap;
       for (const c of incoming) {
-        const idx = updated.findIndex((x) => x.collectionId === c.collectionId);
+        const idx = updated.findIndex((x) => x.data.collectionId === c.data.collectionId);
         if (idx >= 0) updated[idx] = c;
         else {
           updated.push(c);
           psm = psm.map((psc) =>
-            psc.projectId === c.projectId && !psc.collectionIdArray.includes(c.collectionId)
-              ? { ...psc, collectionIdArray: [...psc.collectionIdArray, c.collectionId] }
+            psc.projectId === c.data.projectId && !psc.collectionIdArray.includes(c.data.collectionId)
+              ? { ...psc, collectionIdArray: [...psc.collectionIdArray, c.data.collectionId] }
               : psc
           );
         }
@@ -140,24 +140,24 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       let psm = s.projectScreenMap;
       let csm = s.collectionScreenMap;
       for (const p of incoming) {
-        const idx = updated.findIndex((x) => x.paperId === p.paperId);
+        const idx = updated.findIndex((x) => x.data.paperId === p.data.paperId);
         if (idx >= 0) updated[idx] = p;
         else {
           updated.push(p);
-          if (!p.projectId && !p.collectionId && wsm && wsm.workspaceId === p.workspaceId && !wsm.paperIdArray.includes(p.paperId)) {
-            wsm = { ...wsm, paperIdArray: [...wsm.paperIdArray, p.paperId] };
+          if (!p.data.projectId && !p.data.collectionId && wsm && wsm.workspaceId === p.data.workspaceId && !wsm.paperIdArray.includes(p.data.paperId)) {
+            wsm = { ...wsm, paperIdArray: [...wsm.paperIdArray, p.data.paperId] };
           }
-          if (p.projectId) {
+          if (p.data.projectId) {
             psm = psm.map((psc) =>
-              psc.projectId === p.projectId && !psc.paperIdArray.includes(p.paperId)
-                ? { ...psc, paperIdArray: [...psc.paperIdArray, p.paperId] }
+              psc.projectId === p.data.projectId && !psc.paperIdArray.includes(p.data.paperId)
+                ? { ...psc, paperIdArray: [...psc.paperIdArray, p.data.paperId] }
                 : psc
             );
           }
-          if (p.collectionId) {
+          if (p.data.collectionId) {
             csm = csm.map((csc) =>
-              csc.collectionId === p.collectionId && !csc.paperIdArray.includes(p.paperId)
-                ? { ...csc, paperIdArray: [...csc.paperIdArray, p.paperId] }
+              csc.collectionId === p.data.collectionId && !csc.paperIdArray.includes(p.data.paperId)
+                ? { ...csc, paperIdArray: [...csc.paperIdArray, p.data.paperId] }
                 : csc
             );
           }
@@ -170,7 +170,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     set((s) => {
       const wsm = s.workspaceScreenMap;
       return {
-        projects: s.projects.filter((p) => p.projectId !== projectId),
+        projects: s.projects.filter((p) => p.data.projectId !== projectId),
         projectScreenMap: s.projectScreenMap.filter((psc) => psc.projectId !== projectId),
         workspaceScreenMap: wsm
           ? { ...wsm, projectIdArray: wsm.projectIdArray.filter((id) => id !== projectId) }
@@ -180,7 +180,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   deleteFromCollections: (collectionId) =>
     set((s) => ({
-      collections: s.collections.filter((c) => c.collectionId !== collectionId),
+      collections: s.collections.filter((c) => c.data.collectionId !== collectionId),
       collectionScreenMap: s.collectionScreenMap.filter((csc) => csc.collectionId !== collectionId),
       projectScreenMap: s.projectScreenMap.map((psc) =>
         psc.collectionIdArray.includes(collectionId)
@@ -191,23 +191,23 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   deleteFromPapers: (paperId) =>
     set((s) => {
-      const paper = s.papers.find((p) => p.paperId === paperId);
-      const isRoot = Boolean(paper && !paper.projectId && !paper.collectionId);
+      const paper = s.papers.find((p) => p.data.paperId === paperId);
+      const isRoot = Boolean(paper && !paper.data.projectId && !paper.data.collectionId);
       return {
-        papers: s.papers.filter((p) => p.paperId !== paperId),
+        papers: s.papers.filter((p) => p.data.paperId !== paperId),
         workspaceScreenMap: isRoot && s.workspaceScreenMap
           ? { ...s.workspaceScreenMap, paperIdArray: s.workspaceScreenMap.paperIdArray.filter((id) => id !== paperId) }
           : s.workspaceScreenMap,
-        projectScreenMap: paper?.projectId
+        projectScreenMap: paper?.data.projectId
           ? s.projectScreenMap.map((psc) =>
-              psc.projectId === paper.projectId
+              psc.projectId === paper.data.projectId
                 ? { ...psc, paperIdArray: psc.paperIdArray.filter((id) => id !== paperId) }
                 : psc
             )
           : s.projectScreenMap,
-        collectionScreenMap: paper?.collectionId
+        collectionScreenMap: paper?.data.collectionId
           ? s.collectionScreenMap.map((csc) =>
-              csc.collectionId === paper.collectionId
+              csc.collectionId === paper.data.collectionId
                 ? { ...csc, paperIdArray: csc.paperIdArray.filter((id) => id !== paperId) }
                 : csc
             )
@@ -218,21 +218,21 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   updateInProjects: (projectId, data) =>
     set((s) => ({
       projects: s.projects.map((p) =>
-        p.projectId === projectId ? { ...p, ...data } : p
+        p.data.projectId === projectId ? { ...p, data: { ...p.data, ...data.data } } : p
       ),
     })),
 
   updateInCollections: (collectionId, data) =>
     set((s) => ({
       collections: s.collections.map((c) =>
-        c.collectionId === collectionId ? { ...c, ...data } : c
+        c.data.collectionId === collectionId ? { ...c, data: { ...c.data, ...data.data } } : c
       ),
     })),
 
   updateInPapers: (paperId, data) =>
     set((s) => ({
       papers: s.papers.map((p) =>
-        p.paperId === paperId ? { ...p, ...data } : p
+        p.data.paperId === paperId ? { ...p, data: { ...p.data, ...data.data } } : p
       ),
     })),
 
@@ -240,11 +240,11 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     get().workspaces.find((w) => w.workspaceId === workspaceId),
 
   getProjectById: (projectId) =>
-    get().projects.find((p) => p.projectId === projectId),
+    get().projects.find((p) => p.data.projectId === projectId),
 
   getCollectionById: (collectionId) =>
-    get().collections.find((c) => c.collectionId === collectionId),
+    get().collections.find((c) => c.data.collectionId === collectionId),
 
   getPaperById: (paperId) =>
-    get().papers.find((p) => p.paperId === paperId),
+    get().papers.find((p) => p.data.paperId === paperId),
 }));

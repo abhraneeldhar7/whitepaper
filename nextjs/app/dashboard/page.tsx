@@ -32,11 +32,11 @@ export default function DashboardPage() {
 
   const overviewProjects = !workspaceScreenMap
     ? []
-    : projects.filter((p) => workspaceScreenMap.projectIdArray.includes(p.projectId));
+    : projects.filter((p) => workspaceScreenMap.projectIdArray.includes(p.data.projectId));
 
   const overviewPapers = !workspaceScreenMap
     ? []
-    : papers.filter((p) => workspaceScreenMap.paperIdArray.includes(p.paperId));
+    : papers.filter((p) => workspaceScreenMap.paperIdArray.includes(p.data.paperId));
 
   return (
     <DashboardRoot ribbon={<DashboardRibbon />}>

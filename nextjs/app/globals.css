@@ -22,9 +22,9 @@
   --site-max: 1200px;
   --content-max: 700px;
 
-  --text-xs: 0.74rem;
+  --text-xs: 0.81rem;
   /* 12px - captions, timestamps */
-  --text-sm: 0.84rem;
+  --text-sm: 0.87rem;
   /* 14px - buttons, UI labels, nav */
   --text-base: 1rem;
   /* 16px - body, reading text */
@@ -213,7 +213,7 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 body {

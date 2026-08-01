@@ -90,8 +90,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
       const { projects, papers } = useDashboardStore.getState();
       return {
-        projects: projects.filter((p) => existing.projectIdArray.includes(p.projectId)),
-        papers: papers.filter((p) => existing.paperIdArray.includes(p.paperId)),
+        projects: projects.filter((p) => existing.projectIdArray.includes(p.data.projectId)),
+        papers: papers.filter((p) => existing.paperIdArray.includes(p.data.paperId)),
       };
     }
 
@@ -111,8 +111,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         lastFetched: Date.now(),
         isLoading: false,
         workspaceId,
-        projectIdArray: data.projects.map((p) => p.projectId),
-        paperIdArray: data.papers.map((p) => p.paperId),
+        projectIdArray: data.projects.map((p) => p.data.projectId),
+        paperIdArray: data.papers.map((p) => p.data.paperId),
       },
     });
 
@@ -125,8 +125,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
       const { collections, papers } = useDashboardStore.getState();
       return {
-        collections: collections.filter((c) => existing.collectionIdArray.includes(c.collectionId)),
-        papers: papers.filter((p) => existing.paperIdArray.includes(p.paperId)),
+        collections: collections.filter((c) => existing.collectionIdArray.includes(c.data.collectionId)),
+        papers: papers.filter((p) => existing.paperIdArray.includes(p.data.paperId)),
       };
     }
 
@@ -159,8 +159,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           lastFetched: Date.now(),
           isLoading: false,
           projectId,
-          collectionIdArray: data.collections.map((c) => c.collectionId),
-          paperIdArray: data.papers.map((p) => p.paperId),
+          collectionIdArray: data.collections.map((c) => c.data.collectionId),
+          paperIdArray: data.papers.map((p) => p.data.paperId),
         },
       ],
     });
@@ -173,7 +173,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const existing = maps.find((csc) => csc.collectionId === collectionId);
     if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
       const { papers } = useDashboardStore.getState();
-      return papers.filter((p) => existing.paperIdArray.includes(p.paperId));
+      return papers.filter((p) => existing.paperIdArray.includes(p.data.paperId));
     }
 
     useDashboardStore.setState((s) => ({
@@ -205,7 +205,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           lastFetched: Date.now(),
           isLoading: false,
           collectionId,
-          paperIdArray: data.papers.map((p) => p.paperId),
+          paperIdArray: data.papers.map((p) => p.data.paperId),
         },
       ],
     });

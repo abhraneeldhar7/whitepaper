@@ -3,8 +3,9 @@ import { PRIVATE } from "@/lib/api/endpoints";
 import type { Collection } from "@/lib/types";
 import type { PaperWithRole } from "@/lib/api/services/workspace";
 
-export interface CollectionWithRole extends Collection {
+export interface CollectionWithRole {
   role: string;
+  data: Collection;
 }
 
 export interface CollectionScreenData {
@@ -27,5 +28,5 @@ export function fetchCollectionById(
   return client.get<{ collection: Collection, role: string } | null>(
     PRIVATE.COLLECTION_BY_ID,
     { query: { collectionId } },
-  ).then(r => r ? { ...r.collection, role: r.role } as CollectionWithRole : null);
+  ).then(r => r ? { role: r.role, data: r.collection } as CollectionWithRole : null);
 }

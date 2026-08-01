@@ -112,7 +112,7 @@ export default function CreateProjectDialog({ open, onClose }: CreateProjectDial
 
       const result = await createProject(formData);
 
-      useDashboardStore.getState().upsertToProjects([{ ...result.project, role: "owner" }]);
+      useDashboardStore.getState().upsertToProjects([{ role: "owner", data: result.project }]);
       toast.success("Project created");
       handleClose();
     } catch (e) {

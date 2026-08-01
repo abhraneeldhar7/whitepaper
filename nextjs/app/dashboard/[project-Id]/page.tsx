@@ -30,11 +30,11 @@ export default function ProjectPage() {
 
   const overviewCollections = !screenMap
     ? []
-    : collections.filter((c) => screenMap.collectionIdArray.includes(c.collectionId));
+    : collections.filter((c) => screenMap.collectionIdArray.includes(c.data.collectionId));
 
   const overviewPapers = !screenMap
     ? []
-    : papers.filter((p) => screenMap.paperIdArray.includes(p.paperId));
+    : papers.filter((p) => screenMap.paperIdArray.includes(p.data.paperId));
 
   return (
     <DashboardRoot ribbon={<DashboardRibbon />}>
