@@ -1,0 +1,1 @@
+git ls-files -z nextjs fastapi | xargs -0 cat | wc -l

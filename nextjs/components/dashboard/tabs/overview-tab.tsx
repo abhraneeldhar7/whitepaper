@@ -8,11 +8,12 @@ import DashboardCreateButton from "../create-popover";
 import CreateProjectDialog from "../create-project-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FilePlusCornerIcon, FolderIcon, LayoutGridIcon, ListIcon, RotateCcw, StickyNoteIcon } from "lucide-react";
+import { FilePlusCornerIcon, FingerprintIcon, FolderIcon, LayoutGridIcon, ListIcon, MouseRightIcon, RotateCcw, StickyNoteIcon } from "lucide-react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
-import FolderVisuals from "@/components/ui/folders/folderVisuals";
 import ProjectCard from "@/components/ui/folders/ProjectCard";
 import { Label } from "@/components/ui/label";
+import FolderCard from "@/components/ui/folders/FolderCard";
+import PaperVisual from "@/components/ui/folders/PaperVisual";
 
 interface OverviewTabProps {
   loading?: boolean;
@@ -37,7 +38,7 @@ export default function OverviewTab({ loading = false, projects = [], collection
   if (loading) return <OverviewTabSkeleton />;
   console.log("proojects: ", projects)
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-4">
       <div className="flex gap-2 items-center justify-end">
         <div className="border flex gap-1 p-[3px] h-fit rounded-sm">
           <Button size="icon" className="rounded-xs" variant="secondary"><LayoutGridIcon /></Button>
@@ -46,20 +47,50 @@ export default function OverviewTab({ loading = false, projects = [], collection
         <Input className="md:w-[300px] h-10 sm:h-10" />
         <DashboardCreateButton onCreateProject={() => setCreateProjectOpen(true)} />
       </div>
-
       <CreateProjectDialog open={createProjectOpen} onClose={() => setCreateProjectOpen(false)} />
-
 
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="w-full min-h-[500px]">
+          <div className="min-h-[500px] relative">
+
+            <div className="inset-0 absolute z-[2] bg-primary/10 flex items-center justify-center rounded-lg">
+              <p className="text-md flex items-center">
+                <span className="md:hidden inline-flex items-center mr-1"><FingerprintIcon className="inline opacity-70 mr-1" size={20} /> Tap and hold</span>
+                <span className="hidden md:inline-flex items-center mr-1"><MouseRightIcon className="inline opacity-70 mr-1" size={20} /> Right click</span>
+                for menu</p>
+            </div>
+
             {projects?.length > 0 && (
-              <div>
-                <Label>Projects</Label>
-                <div className="grid grid-cols-4">
+              <div className="space-y-3">
+                <Label className="text-md">Projects</Label>
+                <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fit,_minmax(200px,_1fr))] gap-4 md:gap-10">
                   {projects.map((project, index) => (
-                    <ProjectCard key={index} logoUrl={project.data.logoUrl || ""} folderName={project.data.name} timeAgo={`${timeAgo(project.data.updatedAt).value}${timeAgo(project.data.updatedAt).unit}`} />
+                    <div key={index} className="flex md:block items-center justify-center">
+                      <ProjectCard logoUrl={project.data.logoUrl || ""} folderName={project.data.name} timeAgo={`${timeAgo(project.data.updatedAt).value}${timeAgo(project.data.updatedAt).unit}`} />
+                    </div>
                   ))}
+                </div>
+              </div>
+            )}
+            {collections?.length > 0 && (
+              <div className="space-y-3 mt-5">
+                <Label className="text-md">Collections</Label>
+                <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fit,_minmax(200px,_1fr))] gap-4 md:gap-10">
+                  {collections.map((collection, index) => (
+                    <div key={index} className="flex md:block items-center justify-center">
+                      <FolderCard />
+                    </div>))}
+                </div>
+              </div>
+            )}
+            {papers?.length > 0 && (
+              <div className="space-y-3 mt-5">
+                <Label className="text-md">Papers</Label>
+                <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fit,_minmax(200px,_1fr))] gap-4 md:gap-10">
+                  {papers.map((paper, index) => (
+                    <div key={index} className="flex md:block items-center justify-center">
+                      <PaperVisual />
+                    </div>))}
                 </div>
               </div>
             )}
@@ -81,59 +112,6 @@ export default function OverviewTab({ loading = false, projects = [], collection
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
-
-
-      {projects.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium mb-3">Projects</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {projects.map((project, index) => (
-              <div
-                key={index}
-                className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
-              >
-                <p className="font-medium">{project.data.name}</p>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {project.data.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {collections.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium mb-3">Collections</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {collections.map((collection, index) => (
-              <div
-                key={index}
-                className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
-              >
-                <p className="font-medium">{collection.data.name}</p>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {collection.data.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {papers.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium mb-3">Papers</h3>
-          <div className="space-y-2">
-            {papers.map((paper, index) => (
-              <div
-                key={index}
-                className="border rounded-md p-3 hover:bg-muted/50 cursor-pointer"
-              >
-                <p className="font-medium">{paper.data.title}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

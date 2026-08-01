@@ -9,7 +9,7 @@ export interface FolderNotesProps {
   className?: string;
 }
 
-const FolderVisuals: React.FC<FolderNotesProps> = ({
+const FolderCard: React.FC<FolderNotesProps> = ({
   width,
   height,
   className = '',
@@ -94,11 +94,11 @@ const FolderVisuals: React.FC<FolderNotesProps> = ({
           <rect x="50" y="110" width="300" height="230" rx="28" fill={`url(#${backGrad})`} />
           <rect x="51.5" y="111.5" width="297" height="227" rx="26.5" fill="none" stroke="#4a4a50" strokeWidth="1.5" />
           <PaperVisual variant="back" inline shadowFilterId={paperShadow}
-            className="[transform-box:view-box] origin-[220px_200px] translate-x-[32px] translate-y-[28px] rotate-[10deg] group-hover:translate-x-[50px] group-hover:translate-y-[18px] group-hover:rotate-[15deg]" />
+            className="[transform-box:view-box] origin-[220px_200px] translate-x-[32px] translate-y-[28px] rotate-[10deg] group-hover:translate-x-[50px] group-hover:translate-y-[18px] group-hover:rotate-[15deg] group-active:translate-x-[50px] group-active:translate-y-[18px] group-active:rotate-[15deg]" />
           <PaperVisual variant="middle" inline shadowFilterId={paperShadow}
-            className="[transform-box:view-box] origin-[220px_200px] z-10 -translate-x-[10px] translate-y-[11px] group-hover:-translate-x-[10px] group-hover:translate-y-[6px]" />
+            className="[transform-box:view-box] origin-[220px_200px] z-10 -translate-x-[10px] translate-y-[11px] group-hover:-translate-x-[10px] group-hover:translate-y-[6px] group-active:-translate-x-[10px] group-active:translate-y-[6px]" />
           <PaperVisual variant="front" inline shadowFilterId={paperShadow}
-            className="[transform-box:view-box] origin-[220px_200px] -translate-x-[52px] translate-y-[22px] -rotate-[9deg] group-hover:-translate-x-[68px] group-hover:translate-y-[12px] group-hover:-rotate-[14deg]" />
+            className="[transform-box:view-box] origin-[220px_200px] -translate-x-[52px] translate-y-[22px] -rotate-[9deg] group-hover:-translate-x-[68px] group-hover:translate-y-[12px] group-hover:-rotate-[14deg] group-active:-translate-x-[68px] group-active:translate-y-[12px] group-active:-rotate-[14deg]" />
         </g>
 
         <g filter={`url(#${glassBlur})`} clipPath={`url(#${glassClip})`}>
@@ -106,11 +106,11 @@ const FolderVisuals: React.FC<FolderNotesProps> = ({
           <rect x="51.5" y="111.5" width="297" height="227" rx="26.5" fill="none" stroke="#4a4a50" strokeWidth="1.5" />
 
           <PaperVisual variant="back" inline shadowFilterId={paperShadow}
-            className="[transform-box:view-box] origin-[220px_200px] translate-x-[32px] translate-y-[28px] rotate-[10deg] group-hover:translate-x-[50px] group-hover:translate-y-[18px] group-hover:rotate-[15deg]" />
+            className="[transform-box:view-box] origin-[220px_200px] translate-x-[32px] translate-y-[28px] rotate-[10deg] group-hover:translate-x-[50px] group-hover:translate-y-[18px] group-hover:rotate-[15deg] group-active:translate-x-[50px] group-active:translate-y-[18px] group-active:rotate-[15deg]" />
           <PaperVisual variant="middle" inline shadowFilterId={paperShadow}
-            className="[transform-box:view-box] origin-[220px_200px] z-10 -translate-x-[10px] translate-y-[11px] group-hover:-translate-x-[10px] group-hover:translate-y-[6px]" />
+            className="[transform-box:view-box] origin-[220px_200px] z-10 -translate-x-[10px] translate-y-[11px] group-hover:-translate-x-[10px] group-hover:translate-y-[6px] group-active:-translate-x-[10px] group-active:translate-y-[6px]" />
           <PaperVisual variant="front" inline shadowFilterId={paperShadow}
-            className="[transform-box:view-box] origin-[220px_200px] -translate-x-[52px] translate-y-[22px] -rotate-[9deg] group-hover:-translate-x-[68px] group-hover:translate-y-[12px] group-hover:-rotate-[14deg]" />
+            className="[transform-box:view-box] origin-[220px_200px] -translate-x-[52px] translate-y-[22px] -rotate-[9deg] group-hover:-translate-x-[68px] group-hover:translate-y-[12px] group-hover:-rotate-[14deg] group-active:-translate-x-[68px] group-active:translate-y-[12px] group-active:-rotate-[14deg]" />
         </g>
 
         <path d={frontFolderPath} fill={`url(#${glassFill})`} />
@@ -120,4 +120,4 @@ const FolderVisuals: React.FC<FolderNotesProps> = ({
   );
 };
 
-export default FolderVisuals;
+export default FolderCard;
