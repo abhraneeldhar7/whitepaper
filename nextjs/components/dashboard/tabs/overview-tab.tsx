@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProjectWithRole, CollectionWithRole, PaperWithRole } from "@/lib/api/services/dashboard";
+import { timeAgo } from "@/lib/time";
 import DashboardCreateButton from "../create-popover";
 import CreateProjectDialog from "../create-project-dialog";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ export default function OverviewTab({ loading = false, projects = [], collection
                 <Label>Projects</Label>
                 <div className="grid grid-cols-4">
                   {projects.map((project, index) => (
-                    <ProjectCard key={index} logoUrl={project.data.logoUrl || ""} folderName={project.data.name} timeAgo="20" />
+                    <ProjectCard key={index} logoUrl={project.data.logoUrl || ""} folderName={project.data.name} timeAgo={`${timeAgo(project.data.updatedAt).value}${timeAgo(project.data.updatedAt).unit}`} />
                   ))}
                 </div>
               </div>
