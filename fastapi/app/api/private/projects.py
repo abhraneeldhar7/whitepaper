@@ -84,7 +84,7 @@ async def create_project_endpoint(
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
-    has_access = check_access(auth.roles, workspace, "create")
+    has_access, role = check_access(auth.roles, workspace, "create")
     if not has_access:
         raise HTTPException(status_code=403, detail="You don't have permission to create projects in this workspace")
 
@@ -166,4 +166,4 @@ async def create_project_endpoint(
         bannerUrl=banner_url,
     )
 
-    return {"project": project}
+    return {"role": role, "data": project}

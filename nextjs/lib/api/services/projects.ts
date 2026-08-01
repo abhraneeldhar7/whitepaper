@@ -19,7 +19,8 @@ export interface ProjectScreenData {
 }
 
 export interface CreateProjectResponse {
-  project: Project;
+  role: string;
+  data: Project;
 }
 
 export function createProject(
