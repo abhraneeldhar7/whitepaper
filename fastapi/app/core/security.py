@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Any
 
 from clerk_backend_api import AuthenticateRequestOptions, Clerk
-from fastapi import HTTPException, Request
+from fastapi import Request
 
 from app.core.config import settings
 from app.shared.schema import ClerkUserRole
@@ -24,17 +23,16 @@ class VerifiedRequest:
     roles: list[ClerkUserRole] = field(default_factory=list)
 
 
-async def get_verified_request(request: Request) -> VerifiedRequest:
+async def get_verified_request(request: Request) -> VerifiedRequest | None:
     request_state = clerk_client.authenticate_request(request, _auth_options())
 
     if not request_state.is_signed_in:
-        detail = request_state.message or "Invalid token"
-        raise HTTPException(status_code=401, detail=detail)
+        return None
 
     payload = request_state.payload or {}
     user_id = payload.get("sub")
     if not user_id:
-        raise HTTPException(status_code=401, detail="No user ID in token")
+        return None
 
     raw_roles: list[dict] = payload.get("metadata", {}).get("roles", [])
     roles = [

@@ -14,6 +14,7 @@ from app.services.access_control import check_access
 from app.services.project import (
     create_project,
     get_project_by_id,
+    get_project_by_slug,
     get_project_count_in_workspace,
     project_slug_exists_in_workspace,
 )
@@ -31,17 +32,37 @@ from app.utils.images import compress_image
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.get("/")
-async def get_project(
-    projectId: str = Query(...),
+@router.get("/id/{projectId}")
+async def get_project_by_id(
+    projectId: str,
     session: AsyncSession = Depends(db.get_db),
-    auth: VerifiedRequest = Depends(get_verified_request),
-) -> dict | None:
+    auth: VerifiedRequest | None = Depends(get_verified_request),
+) -> dict:
     project = await get_project_by_id(session, projectId)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    has_access, role = check_access(auth.roles, project, "view")
+    roles = auth.roles if auth else []
+    has_access, role = check_access(roles, project, "view")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return {"project": project, "role": role}
+
+
+@router.get("/slug/{slug}")
+async def get_project_by_slug(
+    slug: str,
+    workspaceId: str = Query(...),
+    session: AsyncSession = Depends(db.get_db),
+    auth: VerifiedRequest | None = Depends(get_verified_request),
+) -> dict:
+    project = await get_project_by_slug(session, workspaceId, slug)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    roles = auth.roles if auth else []
+    has_access, role = check_access(roles, project, "view")
     if not has_access:
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -54,8 +75,10 @@ async def check_slug(
     slug: str = Query(...),
     projectId: Optional[str] = Query(None),
     session: AsyncSession = Depends(db.get_db),
-    auth: VerifiedRequest = Depends(get_verified_request),
+    auth: VerifiedRequest | None = Depends(get_verified_request),
 ) -> dict:
+    if not auth:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     result = await session.execute(
         select(Project).where(
             Project.workspaceId == workspaceId,
@@ -78,8 +101,10 @@ async def create_project_endpoint(
     logo: UploadFile = File(None),
     banner: UploadFile = File(None),
     session: AsyncSession = Depends(db.get_db),
-    auth: VerifiedRequest = Depends(get_verified_request),
+    auth: VerifiedRequest | None = Depends(get_verified_request),
 ) -> dict:
+    if not auth:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     workspace = await get_workspace_by_id(session, workspaceId)
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")

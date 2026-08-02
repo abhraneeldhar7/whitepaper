@@ -1,9 +1,7 @@
 type RequestMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 type QueryPrimitive = string | number | boolean | null | undefined;
-type AuthMode = "required" | "optional" | "none";
 
 const REQUEST_TIMEOUT_MS = 30000;
-const MISSING_TOKEN_ERROR = "Authentication token is unavailable.";
 
 export class ApiError extends Error {
   status: number;
@@ -27,7 +25,6 @@ export type RequestOptions = {
   body?: unknown;
   query?: QueryParams;
   headers?: HeadersInit;
-  auth?: AuthMode;
 };
 
 export type ApiClient = {
@@ -42,7 +39,7 @@ type ApiRequestOptions = RequestOptions & {
   method?: RequestMethod;
 };
 
-type TokenResolver = (auth: AuthMode) => Promise<string | null>;
+type TokenResolver = () => Promise<string | null>;
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
 
@@ -75,25 +72,13 @@ export function configureApiToken(getToken: () => Promise<string | null>): void 
   _getToken = getToken;
 }
 
-async function resolveClientToken(auth: AuthMode): Promise<string | null> {
-  if (auth === "none") return null;
+async function resolveClientToken(): Promise<string | null> {
   if (!_getToken) throw new Error("API token not configured. Call configureApiToken() first.");
-  const token = await _getToken();
-  if (!token && auth === "required") {
-    throw new Error(MISSING_TOKEN_ERROR);
-  }
-  return token;
+  return _getToken();
 }
 
 function createServerTokenResolver(getToken: () => Promise<string | null>): TokenResolver {
-  return async (auth: AuthMode) => {
-    if (auth === "none") return null;
-    const token = await getToken();
-    if (!token && auth === "required") {
-      throw new Error(MISSING_TOKEN_ERROR);
-    }
-    return token;
-  };
+  return getToken;
 }
 
 function createRequestClient(resolveToken: TokenResolver): ApiClient {
@@ -104,20 +89,13 @@ function createRequestClient(resolveToken: TokenResolver): ApiClient {
       body,
       query,
       headers,
-      auth = "required",
     }: ApiRequestOptions = {},
   ): Promise<T> {
     let resolvedToken: string | null = null;
-    if (auth !== "none") {
-      if (auth === "optional") {
-        try {
-          resolvedToken = await resolveToken(auth);
-        } catch {
-          resolvedToken = null;
-        }
-      } else {
-        resolvedToken = await resolveToken(auth);
-      }
+    try {
+      resolvedToken = await resolveToken();
+    } catch {
+      resolvedToken = null;
     }
 
     const requestHeaders = new Headers(headers);

@@ -19,6 +19,20 @@ async def get_project_by_id(
     return result.scalar_one_or_none()
 
 
+async def get_project_by_slug(
+    db: AsyncSession,
+    workspaceId: str,
+    slug: str,
+) -> Project | None:
+    result = await db.execute(
+        select(Project).where(
+            Project.workspaceId == workspaceId,
+            Project.publicSlug == slug,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def project_slug_exists_in_workspace(
     db: AsyncSession,
     workspaceId: str,

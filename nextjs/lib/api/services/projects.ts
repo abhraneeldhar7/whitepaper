@@ -55,7 +55,17 @@ export function fetchProjectById(
   client: ApiClient = apiClient,
 ): Promise<ProjectWithRole | null> {
   return client.get<{ project: Project, role: string } | null>(
-    PRIVATE.PROJECT_BY_ID,
-    { query: { projectId } },
+    PRIVATE.PROJECT_BY_ID + "/" + projectId,
+  ).then(r => r ? { role: r.role, data: r.project } as ProjectWithRole : null);
+}
+
+export function getProjectBySlug(
+  workspaceId: string,
+  slug: string,
+  client: ApiClient = apiClient,
+): Promise<ProjectWithRole | null> {
+  return client.get<{ project: Project, role: string } | null>(
+    PRIVATE.PROJECT_BY_SLUG + "/" + slug,
+    { query: { workspaceId } },
   ).then(r => r ? { role: r.role, data: r.project } as ProjectWithRole : null);
 }

@@ -12,3 +12,17 @@ async def get_collection_by_id(
         select(Collection).where(Collection.collectionId == collectionId)
     )
     return result.scalar_one_or_none()
+
+
+async def get_collection_by_slug(
+    db: AsyncSession,
+    projectId: str,
+    slug: str,
+) -> Collection | None:
+    result = await db.execute(
+        select(Collection).where(
+            Collection.projectId == projectId,
+            Collection.publicSlug == slug,
+        )
+    )
+    return result.scalar_one_or_none()

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import db
@@ -9,22 +9,36 @@ from app.services.access_control import check_access
 router = APIRouter(prefix="/papers", tags=["papers"])
 
 
-@router.get("/id")
-async def get_paper(
-    paperId: str = Query(...),
-    type: str = Query("id", regex="^(id|slug)$"),
+@router.get("/id/{paperId}")
+async def get_paper_by_id_endpoint(
+    paperId: str,
     session: AsyncSession = Depends(db.get_db),
-    auth: VerifiedRequest = Depends(get_verified_request),
-) -> dict | None:
-    if type == "slug":
-        paper = await get_paper_by_slug(session, paperId)
-    else:
-        paper = await get_paper_by_id(session, paperId)
-
+    auth: VerifiedRequest | None = Depends(get_verified_request),
+) -> dict:
+    paper = await get_paper_by_id(session, paperId)
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
 
-    has_access, role = check_access(auth.roles, paper, "view")
+    roles = auth.roles if auth else []
+    has_access, role = check_access(roles, paper, "view")
+    if not has_access:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return {"paper": paper, "role": role}
+
+
+@router.get("/slug/{slug}")
+async def get_paper_by_slug_endpoint(
+    slug: str,
+    session: AsyncSession = Depends(db.get_db),
+    auth: VerifiedRequest | None = Depends(get_verified_request),
+) -> dict:
+    paper = await get_paper_by_slug(session, slug)
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    roles = auth.roles if auth else []
+    has_access, role = check_access(roles, paper, "view")
     if not has_access:
         raise HTTPException(status_code=403, detail="Access denied")
 

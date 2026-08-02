@@ -12,8 +12,7 @@ export function fetchPaperById(
   client: ApiClient = apiClient,
 ): Promise<PaperWithRole | null> {
   return client.get<{ paper: Paper, role: string } | null>(
-    PRIVATE.PAPER_BY_ID,
-    { query: { paperId } },
+    PRIVATE.PAPER_BY_ID + "/" + paperId,
   ).then(r => r ? { role: r.role, data: r.paper } as PaperWithRole : null);
 }
 
@@ -22,7 +21,6 @@ export function getPaperBySlug(
   client: ApiClient = apiClient,
 ): Promise<PaperWithRole | null> {
   return client.get<{ paper: Paper, role: string } | null>(
-    PRIVATE.PAPER_BY_ID,
-    { query: { paperId: slug, type: "slug" } },
+    PRIVATE.PAPER_BY_SLUG + "/" + slug,
   ).then(r => r ? { role: r.role, data: r.paper } as PaperWithRole : null);
 }

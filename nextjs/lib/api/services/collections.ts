@@ -26,7 +26,17 @@ export function fetchCollectionById(
   client: ApiClient = apiClient,
 ): Promise<CollectionWithRole | null> {
   return client.get<{ collection: Collection, role: string } | null>(
-    PRIVATE.COLLECTION_BY_ID,
-    { query: { collectionId } },
+    PRIVATE.COLLECTION_BY_ID + "/" + collectionId,
+  ).then(r => r ? { role: r.role, data: r.collection } as CollectionWithRole : null);
+}
+
+export function getCollectionBySlug(
+  projectId: string,
+  slug: string,
+  client: ApiClient = apiClient,
+): Promise<CollectionWithRole | null> {
+  return client.get<{ collection: Collection, role: string } | null>(
+    PRIVATE.COLLECTION_BY_SLUG + "/" + slug,
+    { query: { projectId } },
   ).then(r => r ? { role: r.role, data: r.collection } as CollectionWithRole : null);
 }

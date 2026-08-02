@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import db as db_module
@@ -12,8 +12,10 @@ router = APIRouter(prefix="/screen")
 async def screen_workspace(
     workspaceId: str = Query(...),
     db: AsyncSession = Depends(db_module.get_db),
-    auth: VerifiedRequest = Depends(get_verified_request),
+    auth: VerifiedRequest | None = Depends(get_verified_request),
 ) -> AccessibleItems:
+    if not auth:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return await list_accessible_items(db, auth.roles, "workspace", workspaceId)
 
 
@@ -21,8 +23,10 @@ async def screen_workspace(
 async def screen_project(
     projectId: str = Query(...),
     db: AsyncSession = Depends(db_module.get_db),
-    auth: VerifiedRequest = Depends(get_verified_request),
+    auth: VerifiedRequest | None = Depends(get_verified_request),
 ) -> AccessibleItems:
+    if not auth:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return await list_accessible_items(db, auth.roles, "project", projectId)
 
 
@@ -30,6 +34,8 @@ async def screen_project(
 async def screen_collection(
     collectionId: str = Query(...),
     db: AsyncSession = Depends(db_module.get_db),
-    auth: VerifiedRequest = Depends(get_verified_request),
+    auth: VerifiedRequest | None = Depends(get_verified_request),
 ) -> AccessibleItems:
+    if not auth:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return await list_accessible_items(db, auth.roles, "collection", collectionId)

@@ -8,8 +8,8 @@ from fastapi import HTTPException
 from app.services.collection import get_collection_by_id
 from app.services.project import get_project_by_id
 from app.shared.schema import (
+    ClerkUserRole,
     Collection,
-    EntityMembers,
     EntityType,
     MemberRole,
     Paper,
@@ -59,14 +59,9 @@ async def create_personal_workspace(
 
 
 async def get_user_workspaces(
-    db: AsyncSession, userId: str
+    db: AsyncSession, roles: list[ClerkUserRole]
 ):
-    result = await db.execute(
-        select(EntityMembers.workspaceId)
-        .where(EntityMembers.userId == userId)
-        .distinct()
-    )
-    workspace_ids = result.scalars().all()
+    workspace_ids = {r.workspaceId for r in roles}
     if not workspace_ids:
         return []
 
@@ -77,131 +72,10 @@ async def get_user_workspaces(
     return workspaces
 
 
-@dataclass
-class DashboardResult:
-    workspace: Workspace
-    papers: list[Paper]
-    projects: list[Project]
-    workspace_role: MemberRole | None
-    project_roles: dict[str, MemberRole]
-    paper_roles: dict[str, MemberRole]
-
-
-async def _load_workspace_data(
-    db: AsyncSession, userId: str, workspaceId: str
-) -> DashboardResult:
-    """
-    Fetch entity_members for the user in this workspace, then load data
-    based on what the user has access to.
-
-    - If entityType=workspace entry exists → user sees everything:
-      all root papers + all projects.
-    - If only entityType=project → show only those projects.
-    - If entityType=paper or entityType=collection → resolve parent project,
-      show those.
-    """
-    from app.services.access_control import get_user_memberships
-
-    members = await get_user_memberships(db, userId, workspaceId)
-
-    has_workspace_access = any(
-        m.entityType == EntityType.workspace for m in members
-    )
-
-    project_roles: dict[str, MemberRole] = {}
-    paper_roles: dict[str, MemberRole] = {}
-
-    if has_workspace_access:
-        # Full workspace access — fetch everything at root level
-        papers_result = await db.execute(
-            select(Paper).where(
-                Paper.workspaceId == workspaceId,
-                Paper.projectId.is_(None),
-                Paper.collectionId.is_(None),
-            )
-        )
-        papers = list(papers_result.scalars().all())
-
-        projects_result = await db.execute(
-            select(Project).where(Project.workspaceId == workspaceId)
-        )
-        projects = list(projects_result.scalars().all())
-
-        # Collect roles for projects and papers
-        for m in members:
-            if m.entityType == EntityType.project:
-                project_roles[m.entityId] = m.role
-            elif m.entityType == EntityType.paper:
-                paper_roles[m.entityId] = m.role
-
-        workspace_role = MemberRole.viewer
-        for m in members:
-            if m.entityType == EntityType.workspace:
-                workspace_role = m.role
-                break
-
-        return DashboardResult(
-            workspace=None,  # filled in by caller
-            papers=papers,
-            projects=projects,
-            workspace_role=workspace_role,
-            project_roles=project_roles,
-            paper_roles=paper_roles,
-        )
-
-    # No workspace-level access — resolve from entity memberships
-    target_project_ids: set[str] = set()
-    target_paper_ids: set[str] = set()
-
-    for m in members:
-        if m.entityType == EntityType.project:
-            target_project_ids.add(m.entityId)
-            project_roles[m.entityId] = m.role
-        elif m.entityType == EntityType.paper:
-            target_paper_ids.add(m.entityId)
-            paper_roles[m.entityId] = m.role
-        elif m.entityType == EntityType.collection:
-            coll_result = await db.execute(
-                select(Collection.projectId).where(Collection.collectionId == m.entityId)
-            )
-            parent_project_id = coll_result.scalar_one_or_none()
-            if parent_project_id:
-                target_project_ids.add(parent_project_id)
-
-    # For papers, resolve parent projects
-    if target_paper_ids:
-        papers_result = await db.execute(
-            select(Paper).where(Paper.paperId.in_(target_paper_ids))
-        )
-        papers = list(papers_result.scalars().all())
-        for p in papers:
-            if p.projectId:
-                target_project_ids.add(p.projectId)
-    else:
-        papers = []
-
-    # Fetch target projects
-    if target_project_ids:
-        projects_result = await db.execute(
-            select(Project).where(Project.projectId.in_(target_project_ids))
-        )
-        projects = list(projects_result.scalars().all())
-    else:
-        projects = []
-
-    return DashboardResult(
-        workspace=None,
-        papers=papers,
-        projects=projects,
-        workspace_role=None,
-        project_roles=project_roles,
-        paper_roles=paper_roles,
-    )
-
 
 async def resolve_active_workspace(
     db: AsyncSession,
-    userId: str,
+    roles: list[ClerkUserRole],
     collectionId: str | None = None,
     projectId: str | None = None,
     workspaceId: str | None = None,
@@ -241,34 +115,26 @@ async def resolve_active_workspace(
             selected_workspace_id = lastVisitedWorkspaceId
 
     if not selected_workspace_id:
-        # Priority 1: closest to home
-        result = await db.execute(
-            select(EntityMembers.workspaceId).where(
-                EntityMembers.userId == userId,
-                EntityMembers.entityType == EntityType.workspace,
-                EntityMembers.role == MemberRole.owner,
-            ).order_by(EntityMembers.grantedAt.asc()).limit(1)
+        workspace_roles = sorted(
+            (r for r in roles if r.entityType == "workspace"),
+            key=lambda r: r.grantedAt,
         )
-        selected_workspace_id = result.scalar_one_or_none()
+        owner = next((r for r in workspace_roles if r.role == "owner"), None)
+        if owner:
+            selected_workspace_id = owner.workspaceId
 
     if not selected_workspace_id:
-        # Priority 2: any direct workspace membership
-        result = await db.execute(
-            select(EntityMembers.workspaceId).where(
-                EntityMembers.userId == userId,
-                EntityMembers.entityType == EntityType.workspace,
-            ).order_by(EntityMembers.grantedAt.asc()).limit(1)
+        workspace_roles = sorted(
+            (r for r in roles if r.entityType == "workspace"),
+            key=lambda r: r.grantedAt,
         )
-        selected_workspace_id = result.scalar_one_or_none()
+        if workspace_roles:
+            selected_workspace_id = workspace_roles[0].workspaceId
 
     if not selected_workspace_id:
-        # Priority 3: any entity membership, get its workspaceId.
-        result = await db.execute(
-            select(EntityMembers.workspaceId).where(
-                EntityMembers.userId == userId,
-            ).order_by(EntityMembers.grantedAt.asc()).limit(1)
-        )
-        selected_workspace_id = result.scalar_one_or_none()
+        all_roles = sorted(roles, key=lambda r: r.grantedAt)
+        if all_roles:
+            selected_workspace_id = all_roles[0].workspaceId
 
     if not selected_workspace_id:
         raise HTTPException(status_code=403, detail="no_workspace_available")

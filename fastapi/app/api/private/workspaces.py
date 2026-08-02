@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import db
@@ -13,9 +13,11 @@ router = APIRouter(prefix="/workspaces")
 @router.get("/list")
 async def list_workspaces(
     session: AsyncSession = Depends(db.get_db),
-    auth: VerifiedRequest = Depends(get_verified_request),
+    auth: VerifiedRequest | None = Depends(get_verified_request),
 ):
-    return await get_user_workspaces(session, auth.userId)
+    if not auth:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return await get_user_workspaces(session, auth.roles)
 
 
 @router.get("/active")
@@ -25,10 +27,12 @@ async def workspace_active(
     collectionId: Optional[str] = Query(None),
     lastVisitedWorkspaceId: Optional[str] = Query(None),
     session: AsyncSession = Depends(db.get_db),
-    auth: VerifiedRequest = Depends(get_verified_request),
+    auth: VerifiedRequest | None = Depends(get_verified_request),
 ):
+    if not auth:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return await resolve_active_workspace(
-        session, auth.userId,
+        session, auth.roles,
         collectionId=collectionId,
         projectId=projectId,
         workspaceId=workspaceId,

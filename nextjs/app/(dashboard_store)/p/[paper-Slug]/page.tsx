@@ -9,11 +9,6 @@ export default async function PaperPage({ params }: { params: Promise<{ "paper-S
     const { "paper-Slug": slug } = await params;
     const { getToken } = await auth();
     const token = await getToken();
-
-    if (!token) {
-        return <PaperReadOnly error="unauthenticated" />;
-    }
-
     const client = createApiClient(token);
 
     let paperWithRole: PaperWithRole | null = null;
