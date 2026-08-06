@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { useAuth } from "@clerk/nextjs";
 import { getMe } from "@/lib/api/services/user";
 import { configureApiToken } from "@/lib/api/api-client";
-import type { User } from "@/lib/types";
+import type { User } from "@/shared/types";
 
 interface UserContextType {
   user: User | null;

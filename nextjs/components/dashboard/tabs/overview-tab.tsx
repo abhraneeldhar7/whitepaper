@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ProjectWithRole, CollectionWithRole, PaperWithRole } from "@/lib/api/services/dashboard";
+import type { ProjectWithRole, CollectionWithRole, PaperWithRole } from "@/lib/api/services/workspace";
 import { timeAgo } from "@/lib/time";
 import DashboardCreateButton from "../create-popover";
 import CreateProjectDialog from "../create-project-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FilePlusCornerIcon, FingerprintIcon, FolderIcon, LayoutGridIcon, ListIcon, MouseRightIcon, RotateCcw, StickyNoteIcon } from "lucide-react";
+import { FilePlusCornerIcon, FolderIcon, LayoutGridIcon, ListIcon, RotateCcw, StickyNoteIcon } from "lucide-react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import ProjectCard from "@/components/ui/folders/ProjectCard";
 import { Label } from "@/components/ui/label";
 import FolderCard from "@/components/ui/folders/FolderCard";
 import PaperVisual from "@/components/ui/folders/PaperVisual";
+import { useCreatePaper } from "@/hooks/useCreatePaper";
+import { useDashboardStore } from "@/lib/zustand/store";
 
 interface OverviewTabProps {
   loading?: boolean;
@@ -34,6 +36,8 @@ function OverviewTabSkeleton() {
 
 export default function OverviewTab({ loading = false, projects = [], collections = [], papers = [] }: OverviewTabProps) {
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const handleCreatePaper = useCreatePaper();
+  const activeWorkspaceId = useDashboardStore((s) => s.activeWorkspace?.workspaceId);
 
   if (loading) return <OverviewTabSkeleton />;
   return (
@@ -44,13 +48,13 @@ export default function OverviewTab({ loading = false, projects = [], collection
           <Button size="icon" className="rounded-xs" variant="ghost"><ListIcon /></Button>
         </div>
         <Input className="md:w-[300px] h-10 sm:h-10" />
-        <DashboardCreateButton onCreateProject={() => setCreateProjectOpen(true)} />
+        <DashboardCreateButton onCreateProject={() => setCreateProjectOpen(true)} onCreatePaper={() => handleCreatePaper(activeWorkspaceId)} />
       </div>
       <CreateProjectDialog open={createProjectOpen} onClose={() => setCreateProjectOpen(false)} />
 
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="flex-1 w-full relative">
+          <div className="flex-1 w-full relative md:px-16">
             {/* <style>{`@keyframes hintFade { 0%,80% {opacity:1} 100% {opacity:0} }`}</style>
             <div className="inset-0 absolute z-[2] bg-primary/5 flex items-center justify-center rounded-lg pointer-events-none" style={{
               animation: "hintFade 2s ease-out forwards", animationDuration: "2s", animationDelay: "300ms"
@@ -98,7 +102,7 @@ export default function OverviewTab({ loading = false, projects = [], collection
           </div>
         </ContextMenuTrigger >
         <ContextMenuContent>
-          <ContextMenuItem>
+          <ContextMenuItem onClick={() => handleCreatePaper(activeWorkspaceId)}>
             <StickyNoteIcon /> New paper
           </ContextMenuItem>
           <ContextMenuItem onClick={() => setCreateProjectOpen(true)}>

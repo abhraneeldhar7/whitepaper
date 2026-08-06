@@ -25,9 +25,9 @@ const buttonVariants = cva(
         default:
           "h-10 gap-2 text-sm px-4 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         xs: "h-7 gap-1 rounded-xs px-3 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-9 sm:h-8 gap-2 rounded-xs px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-[14px] justify-start p-4 ",
+        sm: "h-9 sm:h-8 gap-2 rounded-xs px-2.5 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-[14px] justify-start",
         lg: "h-16 md:h-14 text-md md:text-base gap-1.5 px-5 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3 [&_svg:not([class*='size-'])]:size-6 md:[&_svg:not([class*='size-'])]:size-3.5",
-        icon: "h-9 sm:h-8 aspect-square rounded-sm shrink-0",
+        icon: "h-9 sm:h-8 aspect-square rounded-sm shrink-0 [&_svg:not([class*='size-'])]:size-[16px] [&_svg]:text-foreground/70 hover:[&_svg]:text-foreground [&_svg]:transition-all",
         "icon-xs":
           "size-[22px] rounded-[min(var(--radius-xs),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-[10px]",
         "icon-sm":

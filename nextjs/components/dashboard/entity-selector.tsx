@@ -9,8 +9,8 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import ContainerLogo from "@/components/container-logo";
-import type { Workspace } from "@/lib/types";
-import type { ProjectWithRole, CollectionWithRole } from "@/lib/api/services/dashboard";
+import type { Workspace } from "@/shared/types";
+import type { ProjectWithRole, CollectionWithRole } from "@/lib/api/services/workspace";
 import { Check } from "lucide-react";
 
 function getEntityId(

@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS "papers" (
     "publicSlug" VARCHAR(255) NOT NULL,
     "thumbnailUrl" VARCHAR(500),
     "visibility" VARCHAR(20) NOT NULL,
+    "isNew" BOOLEAN NOT NULL DEFAULT TRUE,
     "createdAt" TIMESTAMP NOT NULL,
     "updatedAt" TIMESTAMP NOT NULL
 );

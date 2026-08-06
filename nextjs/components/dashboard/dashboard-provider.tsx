@@ -9,8 +9,8 @@ import {
 } from "react";
 import { useRouter, useSearchParams, useSelectedLayoutSegments } from "next/navigation";
 import { toast } from "sonner";
-import { LAST_VISITED_WORKSPACEID_KEY, DASHBOARD_IDLE_REFRESH_SECONDS } from "@/lib/constants";
-import type { Workspace } from "@/lib/types";
+import { LAST_VISITED_WORKSPACEID_KEY, DASHBOARD_IDLE_REFRESH_SECONDS } from "@/shared/constants";
+import type { Workspace } from "@/shared/types";
 import {
   resolveActiveWorkspace,
   fetchWorkspaceScreen,

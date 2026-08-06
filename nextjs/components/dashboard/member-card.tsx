@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { MemberWithUser } from "@/lib/types";
+import type { MemberWithUser } from "@/shared/types";
 
 interface MemberCardProps {
   member: MemberWithUser;

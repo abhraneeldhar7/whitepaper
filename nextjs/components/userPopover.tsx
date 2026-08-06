@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Skeleton } from "./ui/skeleton";
 import { useState } from "react";
 import { CircleUserIcon, CopyIcon, LogOutIcon, XIcon } from "lucide-react";
-import { User } from "@/lib/types";
+import { User } from "@/shared/types";
 import TruncateText from "./ui/truncateText";
 import { Button } from "./ui/button";
 import { ThemeSwitcher } from "./ui/theme-switcher";

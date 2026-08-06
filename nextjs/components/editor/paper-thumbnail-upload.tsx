@@ -5,7 +5,7 @@ import { useDropzone } from "react-dropzone";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-interface ImageUploadProps {
+interface PaperThumbnailUploadProps {
   icon?: React.ReactNode;
   text?: string;
   value: File | null;
@@ -15,7 +15,7 @@ interface ImageUploadProps {
   children?: React.ReactNode;
 }
 
-export default function ImageUpload({ icon, text, value, preview, onChange, className, children }: ImageUploadProps) {
+export default function PaperThumbnailUpload({ icon, text, value, preview, onChange, className, children }: PaperThumbnailUploadProps) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { "image/*": [] },
     maxFiles: 1,
@@ -33,14 +33,20 @@ export default function ImageUpload({ icon, text, value, preview, onChange, clas
     return () => URL.revokeObjectURL(previewUrl);
   }, [value, previewUrl]);
 
+  const hasPreview = Boolean(previewUrl);
+
   return (
     <div
       {...getRootProps()}
       className={cn(
-        "relative w-full aspect-[3/2] rounded-sm border transition-all cursor-pointer overflow-hidden group",
-        isDragActive && "border-primary",
+        "relative w-full rounded-sm border cursor-pointer overflow-hidden group",
+        hasPreview || isDragActive
+          ? "aspect-[3/2] max-h-[400px]"
+          : "aspect-[3/2] max-h-[50px] hidden md:flex opacity-0",
+        isDragActive && "border-primary opacity-100 bg-primary/20",
         className,
       )}
+      style={{ transition: "max-height 0.3s ease-out" }}
     >
       <input {...getInputProps()} />
 
@@ -50,8 +56,8 @@ export default function ImageUpload({ icon, text, value, preview, onChange, clas
 
       <div
         className={cn(
-          "inset-0 flex items-center justify-center flex-col gap-2.5 bg-background/35 backdrop-blur-[40px] transition-opacity",
-          previewUrl ? "absolute opacity-0 hover:opacity-100" : "opacity-100",
+          "inset-0 flex items-center justify-center flex-col gap-2.5 backdrop-blur-[40px] transition-all w-full h-full",
+          previewUrl ? "absolute opacity-0 hover:opacity-100" : "opacity-100 ",
           isDragActive && "opacity-100"
         )}
       >

@@ -14,7 +14,7 @@ import { createProject, checkProjectSlug } from "@/lib/api/services/projects";
 import { useDashboardStore } from "@/lib/zustand/store";
 import { compressImage } from "@/lib/image";
 import { useDebounce } from "@/hooks/useDebounce";
-import { LOGO_MAX_WIDTH_PIXELS, LOGO_MAX_HEIGHT_PIXELS, BANNER_MAX_WIDTH_PIXELS, BANNER_MAX_HEIGHT_PIXELS } from "@/lib/constants";
+import { LOGO_MAX_WIDTH_PIXELS, LOGO_MAX_HEIGHT_PIXELS, BANNER_MAX_WIDTH_PIXELS, BANNER_MAX_HEIGHT_PIXELS } from "@/shared/constants";
 import { TransitionBox } from "@/components/transition-box";
 
 interface CreateProjectDialogProps {

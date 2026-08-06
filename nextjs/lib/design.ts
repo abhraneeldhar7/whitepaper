@@ -1,0 +1,1 @@
+export const SITE_CONTENT_MAX_WIDTH = 800

@@ -183,6 +183,7 @@ class Paper(SQLModel, table=True):
     publicSlug: str
     thumbnailUrl: Optional[str] = None
     visibility: Visibility = Field(sa_type=VARCHAR(20))
+    isNew: bool = Field(default=True)
     createdAt: datetime
     updatedAt: datetime
 

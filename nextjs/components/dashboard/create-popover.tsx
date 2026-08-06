@@ -9,9 +9,10 @@ import { DialogOverlay } from "../ui/dialog";
 
 interface DashboardCreateButtonProps {
     onCreateProject?: () => void;
+    onCreatePaper?: () => void;
 }
 
-export default function DashboardCreateButton({ onCreateProject }: DashboardCreateButtonProps) {
+export default function DashboardCreateButton({ onCreateProject, onCreatePaper }: DashboardCreateButtonProps) {
     const isMobile = useIsMobile();
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,7 +26,7 @@ export default function DashboardCreateButton({ onCreateProject }: DashboardCrea
             <div className={`fixed inset-0 bg-black/80 backdrop-blur-xs transition-all ${mobileMenuOpen ? "opacity-100 z-[50]" : "opacity-0 z-[-1]"}`} onClick={() => { setMobileMenuOpen(false) }} />
 
             <div className="fixed bottom-5 right-5 z-[50] flex flex-col gap-4 items-end">
-                <Button variant="secondary" size="lg" className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><StickyNoteIcon />  New paper</Button>
+                <Button variant="secondary" size="lg" onClick={() => { onCreatePaper?.(); setMobileMenuOpen(false); }} className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><StickyNoteIcon />  New paper</Button>
                 <Button variant="secondary" size="lg" onClick={() => { onCreateProject?.(); setMobileMenuOpen(false); }} className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><FolderIcon />  New project</Button>
                 <Button variant="secondary" size="lg" className={`transition-all duration-fast ease-out ${mobileMenuOpen ? "opacity-100 translate-x-0" : "translate-x-[90%] opacity-0"}`}><FilePlusCornerIcon />  Import paper</Button>
 
@@ -42,7 +43,7 @@ export default function DashboardCreateButton({ onCreateProject }: DashboardCrea
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="mx-4" sideOffset={10}>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={onCreatePaper}>
                         <StickyNoteIcon />  New paper
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={onCreateProject}>

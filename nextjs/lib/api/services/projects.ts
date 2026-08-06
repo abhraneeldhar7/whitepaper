@@ -1,6 +1,6 @@
 import { apiClient, type ApiClient } from "@/lib/api/api-client";
 import { PRIVATE } from "@/lib/api/endpoints";
-import type { Project, Collection } from "@/lib/types";
+import type { Project, Collection } from "@/shared/types";
 import type { PaperWithRole } from "@/lib/api/services/workspace";
 
 export interface ProjectWithRole {
@@ -54,9 +54,9 @@ export function fetchProjectById(
   projectId: string,
   client: ApiClient = apiClient,
 ): Promise<ProjectWithRole | null> {
-  return client.get<{ project: Project, role: string } | null>(
+  return client.get<{ role: string; data: Project } | null>(
     PRIVATE.PROJECT_BY_ID + "/" + projectId,
-  ).then(r => r ? { role: r.role, data: r.project } as ProjectWithRole : null);
+  );
 }
 
 export function getProjectBySlug(
@@ -64,8 +64,8 @@ export function getProjectBySlug(
   slug: string,
   client: ApiClient = apiClient,
 ): Promise<ProjectWithRole | null> {
-  return client.get<{ project: Project, role: string } | null>(
+  return client.get<{ role: string; data: Project } | null>(
     PRIVATE.PROJECT_BY_SLUG + "/" + slug,
     { query: { workspaceId } },
-  ).then(r => r ? { role: r.role, data: r.project } as ProjectWithRole : null);
+  );
 }

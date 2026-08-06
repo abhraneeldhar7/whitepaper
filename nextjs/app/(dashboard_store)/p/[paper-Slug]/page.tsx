@@ -1,20 +1,26 @@
 import { auth } from "@clerk/nextjs/server";
 import { createApiClient, ApiError } from "@/lib/api/api-client";
-import { getPaperBySlug, type PaperWithRole } from "@/lib/api/services/papers";
+import { getPaperBySlug } from "@/lib/api/services/papers";
 import { notFound } from "next/navigation";
-import { PaperReadOnly } from "@/components/editor/readonly";
-import { PaperEditor } from "@/components/editor/editor";
+import { RESERVED_SLUGS } from "@/shared/constants";
+import PaperReadOnly from "@/components/editor/test/PaperReadOnly";
+import PaperEditor from "@/components/editor/test/PaperEditor";
 
 export default async function PaperPage({ params }: { params: Promise<{ "paper-Slug": string }> }) {
     const { "paper-Slug": slug } = await params;
+
+    if (RESERVED_SLUGS.paper.includes(slug)) {
+        return <PaperEditor />;
+    }
+
     const { getToken } = await auth();
     const token = await getToken();
     const client = createApiClient(token);
 
-    let paperWithRole: PaperWithRole | null = null;
+    let result: Awaited<ReturnType<typeof getPaperBySlug>> = null;
 
     try {
-        paperWithRole = await getPaperBySlug(slug, client);
+        result = await getPaperBySlug(slug, true, client);
     } catch (e) {
         if (e instanceof ApiError) {
             if (e.status === 404) notFound();
@@ -23,13 +29,16 @@ export default async function PaperPage({ params }: { params: Promise<{ "paper-S
         throw e;
     }
 
-    if (!paperWithRole) notFound();
+    if (!result) notFound();
 
-    const canEdit = paperWithRole.role !== "viewer";
+    const { role, data: paper } = result;
+    const canEdit = role !== "viewer";
 
     if (canEdit) {
-        return <PaperEditor paper={paperWithRole} />;
+        return <div className="flex-1 flex flex-col">
+            <PaperEditor paper={paper} />
+        </div>
     }
 
-    return <PaperReadOnly paper={paperWithRole} />;
+    return <PaperReadOnly paper={paper} />;
 }

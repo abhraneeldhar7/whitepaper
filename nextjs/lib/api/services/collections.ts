@@ -1,6 +1,6 @@
 import { apiClient, type ApiClient } from "@/lib/api/api-client";
 import { PRIVATE } from "@/lib/api/endpoints";
-import type { Collection } from "@/lib/types";
+import type { Collection } from "@/shared/types";
 import type { PaperWithRole } from "@/lib/api/services/workspace";
 
 export interface CollectionWithRole {
@@ -25,9 +25,9 @@ export function fetchCollectionById(
   collectionId: string,
   client: ApiClient = apiClient,
 ): Promise<CollectionWithRole | null> {
-  return client.get<{ collection: Collection, role: string } | null>(
+  return client.get<{ role: string; data: Collection } | null>(
     PRIVATE.COLLECTION_BY_ID + "/" + collectionId,
-  ).then(r => r ? { role: r.role, data: r.collection } as CollectionWithRole : null);
+  );
 }
 
 export function getCollectionBySlug(
@@ -35,8 +35,8 @@ export function getCollectionBySlug(
   slug: string,
   client: ApiClient = apiClient,
 ): Promise<CollectionWithRole | null> {
-  return client.get<{ collection: Collection, role: string } | null>(
+  return client.get<{ role: string; data: Collection } | null>(
     PRIVATE.COLLECTION_BY_SLUG + "/" + slug,
     { query: { projectId } },
-  ).then(r => r ? { role: r.role, data: r.collection } as CollectionWithRole : null);
+  );
 }

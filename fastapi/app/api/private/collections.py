@@ -24,7 +24,7 @@ async def get_collection_by_id_endpoint(
     if not has_access:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    return {"collection": collection, "role": role}
+    return {"role": role, "data": collection}
 
 
 @router.get("/slug/{slug}")
@@ -43,4 +43,4 @@ async def get_collection_by_slug_endpoint(
     if not has_access:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    return {"collection": collection, "role": role}
+    return {"role": role, "data": collection}

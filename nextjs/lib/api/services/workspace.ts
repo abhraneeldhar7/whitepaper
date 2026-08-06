@@ -1,10 +1,15 @@
 import { apiClient, type ApiClient } from "@/lib/api/api-client";
 import { PRIVATE } from "@/lib/api/endpoints";
-import type { Workspace, Project, Paper } from "@/lib/types";
+import type { Workspace, Project, Paper, Collection } from "@/shared/types";
 
 export interface ProjectWithRole {
   role: string;
   data: Project;
+}
+
+export interface CollectionWithRole {
+  role: string;
+  data: Collection;
 }
 
 export interface PaperWithRole {

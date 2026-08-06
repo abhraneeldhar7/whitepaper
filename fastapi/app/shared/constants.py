@@ -1,5 +1,11 @@
 MAX_ROLES_PER_USER = 30
 
+RESERVED_SLUGS = {
+    "paper": {"new"},
+    "project": set(),
+    "collection": set(),
+}
+
 LOGO_MAX_HEIGHT_PIXELS = 500
 LOGO_MAX_WIDTH_PIXELS = 500
 BANNER_MAX_HEIGHT_PIXELS = 2000

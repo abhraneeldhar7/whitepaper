@@ -1,10 +1,10 @@
 import { create } from "zustand";
-import type { Workspace, MemberWithUser } from "@/lib/types";
+import type { Workspace, MemberWithUser } from "@/shared/types";
 import type {
   ProjectWithRole,
   CollectionWithRole,
   PaperWithRole,
-} from "@/lib/api/services/dashboard";
+} from "@/lib/api/services/workspace";
 
 interface AvailableWorkspacesMap {
   isLoading: boolean;

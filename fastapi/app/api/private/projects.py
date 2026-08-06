@@ -47,7 +47,7 @@ async def get_project_by_id(
     if not has_access:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    return {"project": project, "role": role}
+    return {"role": role, "data": project}
 
 
 @router.get("/slug/{slug}")
@@ -66,7 +66,7 @@ async def get_project_by_slug(
     if not has_access:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    return {"project": project, "role": role}
+    return {"role": role, "data": project}
 
 
 @router.get("/check-slug")
