@@ -42,7 +42,6 @@ export function createPaper(
 
 export interface SavePaperResponse {
   success: true;
-  thumbnailUrl?: string;
   publicSlug?: string;
 }
 
@@ -50,17 +49,15 @@ export interface SavePaperParams {
   paperId: string;
   title?: string;
   content?: string;
-  thumbnail?: File | Blob;
 }
 
 export function savePaper(
-  { paperId, title, content, thumbnail }: SavePaperParams,
+  { paperId, title, content }: SavePaperParams,
   client: ApiClient = apiClient,
 ): Promise<SavePaperResponse> {
   const formData = new FormData();
   if (title !== undefined) formData.set("title", title);
   if (content !== undefined) formData.set("content", content);
-  if (thumbnail) formData.set("thumbnail", thumbnail, "cover");
 
   return client.post<SavePaperResponse>(PRIVATE.PAPER_SAVE, {
     body: formData,
@@ -77,6 +74,32 @@ export function removeThumbnail(
   client: ApiClient = apiClient,
 ): Promise<RemoveThumbnailResponse> {
   return client.post<RemoveThumbnailResponse>(PRIVATE.PAPER_REMOVE_THUMBNAIL, {
+    query: { paperId },
+  });
+}
+
+export function uploadThumbnail(
+  paperId: string,
+  file: File | Blob,
+  client: ApiClient = apiClient,
+): Promise<{ thumbnailUrl: string }> {
+  const formData = new FormData();
+  formData.set("file", file);
+  return client.post<{ thumbnailUrl: string }>(PRIVATE.PAPER_UPLOAD_THUMBNAIL, {
+    body: formData,
+    query: { paperId },
+  });
+}
+
+export function uploadPaperImage(
+  paperId: string,
+  file: File | Blob,
+  client: ApiClient = apiClient,
+): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.set("file", file);
+  return client.post<{ url: string }>(PRIVATE.PAPER_UPLOAD_IMAGE, {
+    body: formData,
     query: { paperId },
   });
 }

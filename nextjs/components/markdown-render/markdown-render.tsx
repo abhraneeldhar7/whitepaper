@@ -98,7 +98,15 @@ function remarkHighlight(): any {
     };
 }
 
-const highlightSchema = { ...defaultSchema, tagNames: [...(defaultSchema.tagNames || []), 'mark'] };
+const highlightSchema = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), 'mark'],
+  attributes: {
+    ...defaultSchema.attributes,
+    td: [...(defaultSchema.attributes?.td || []), 'style'],
+    th: [...(defaultSchema.attributes?.th || []), 'style'],
+  },
+};
 
 export default function MarkdownRender({ content, contentContainerId }: PostRenderProps) {
     const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')).trim();

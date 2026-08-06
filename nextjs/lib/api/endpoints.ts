@@ -20,6 +20,8 @@ export const PRIVATE = {
   PAPER_CREATE: "/private/papers/create",
   PAPER_SAVE: "/private/papers/save",
   PAPER_REMOVE_THUMBNAIL: "/private/papers/remove-thumbnail",
+  PAPER_UPLOAD_THUMBNAIL: "/private/papers/upload-thumbnail",
+  PAPER_UPLOAD_IMAGE: "/private/papers/upload-embedded-image",
   SCREEN_WORKSPACE: "/private/screen/workspace",
   SCREEN_PROJECT: "/private/screen/project",
   SCREEN_COLLECTION: "/private/screen/collection",

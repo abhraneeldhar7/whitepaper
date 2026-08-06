@@ -37,7 +37,7 @@ export default function ImageUpload({ icon, text, value, preview, onChange, clas
     <div
       {...getRootProps()}
       className={cn(
-        "relative w-full aspect-[3/2] rounded-sm border transition-all cursor-pointer overflow-hidden group",
+        "relative w-full aspect-[5/3] rounded-sm border transition-all cursor-pointer overflow-hidden group",
         isDragActive && "border-primary",
         className,
       )}
@@ -45,12 +45,12 @@ export default function ImageUpload({ icon, text, value, preview, onChange, clas
       <input {...getInputProps()} />
 
       {previewUrl && (
-        <Image src={previewUrl} height={2000} width={2000} className="w-full h-full object-cover object-center" alt="" />
+        <Image src={previewUrl} height={2000} width={2000} className="w-full h-full object-cover object-center group-hover:blur-[20px] group-hover:opacity-80 duraiton-fast transition-all" alt="" />
       )}
 
       <div
         className={cn(
-          "inset-0 flex items-center justify-center flex-col gap-2.5 bg-background/35 backdrop-blur-[40px] transition-opacity",
+          "top-0 left-0 h-full w-full flex items-center justify-center flex-col gap-2.5 bg-background/35 transition-opacity",
           previewUrl ? "absolute opacity-0 hover:opacity-100" : "opacity-100",
           isDragActive && "opacity-100"
         )}
