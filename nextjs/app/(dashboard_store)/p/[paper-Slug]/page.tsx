@@ -3,8 +3,8 @@ import { createApiClient, ApiError } from "@/lib/api/api-client";
 import { getPaperBySlug } from "@/lib/api/services/papers";
 import { notFound } from "next/navigation";
 import { RESERVED_SLUGS } from "@/shared/constants";
-import PaperReadOnly from "@/components/editor/test/PaperReadOnly";
-import PaperEditor from "@/components/editor/test/PaperEditor";
+import PaperReadOnly from "@/components/editor/PaperReadOnly";
+import PaperEditor from "@/components/editor/PaperEditor";
 
 export default async function PaperPage({ params }: { params: Promise<{ "paper-Slug": string }> }) {
     const { "paper-Slug": slug } = await params;

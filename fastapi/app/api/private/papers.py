@@ -148,9 +148,15 @@ async def create_paper_endpoint(
     return {"role": role, "data": paper}
 
 
-async def cleanup_orphaned_images(paperId: str, content: str):
+async def cleanup_orphaned_images(paperId: str):
+    async with db.async_session() as session:
+        content_row = await get_paper_content(session, paperId)
+    if not content_row or not content_row.content:
+        return
+
+    content = content_row.content
     prefix = f"papers/{paperId}/embedded/"
-    pattern = re.compile(rf'{re.escape(settings.R2_PUBLIC_URL)}/{re.escape(prefix)}([^"\s<>]+)')    # this ([^"\s<>]+) thing I still don't know but works.
+    pattern = re.compile(rf'{re.escape(prefix)}([a-f0-9]{{32}})')
     referenced = set(pattern.findall(content))
 
     try:
@@ -213,8 +219,8 @@ async def save_paper_endpoint(
             existing.content = content
         else:
             session.add(PaperContent(paperId=paperId, content=content))
-        if background_tasks:
-            background_tasks.add_task(cleanup_orphaned_images, paperId, content)
+        # if background_tasks:
+        #     background_tasks.add_task(cleanup_orphaned_images, paperId)
 
     paper.updatedAt = now()
     session.add(paper)  # I know this is reduntant. good for logic building

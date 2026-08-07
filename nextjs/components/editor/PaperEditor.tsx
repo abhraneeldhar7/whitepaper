@@ -5,7 +5,7 @@ import type { Paper } from "@/shared/types";
 import { ChevronRight, ImageUpIcon, SidebarIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { compressImage } from "@/lib/image";
-import { removeThumbnail, savePaper, uploadPaperImage, uploadThumbnail } from "@/lib/api/services/papers";
+import { removeThumbnail, savePaper, uploadThumbnail } from "@/lib/api/services/papers";
 import { BANNER_MAX_HEIGHT_PIXELS, BANNER_MAX_WIDTH_PIXELS } from "@/shared/constants";
 import { Editor } from "@/components/editor/editor";
 import "@/components/markdown-render/markdown-render.css";
@@ -151,25 +151,6 @@ export default function PaperEditor({ paper }: { paper?: Paper }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  async function handleImageUpload(file: File): Promise<string> {
-    const p = currentPaperRef.current;
-    if (!p) throw new Error("No paper");
-    console.log("[save] image upload");
-    setIsSaving(true);
-    try {
-      const compressed = await compressImage({
-        file,
-        maxWidth: BANNER_MAX_WIDTH_PIXELS,
-        maxHeight: BANNER_MAX_HEIGHT_PIXELS,
-        crop: false,
-      });
-      const result = await uploadPaperImage(p.paperId, compressed as Blob);
-      return result.url;
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
   return (
     <div className={`p-1 md:p-2 bg-muted flex h-svh w-full transition-all ${sidebarOpen ? "md:gap-2" : "md:gap-0"}`}>
       <div className="hidden md:flex relative overflow-hidden h-full transition-all ease-out" style={{ width: sidebarOpen ? sidebarWidth : 0 }}>
@@ -234,11 +215,10 @@ export default function PaperEditor({ paper }: { paper?: Paper }) {
                 <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={(e) => handleCoverChange(e.target.files?.[0] || null)} />
               </div>
 
-              <div className="px-[10px] mt-8 pb-32 markdownDiv">
+              <div className="px-[10px] mt-8 markdownDiv">
                 <Editor
                   content={contentState}
-                  placeholder="Type '/' for commands..."
-                  uploadImage={handleImageUpload}
+                  paperId={currentPaper?.paperId}
                   onChange={handleContentChange}
                   onBlur={handleEditorBlur}
                 />
