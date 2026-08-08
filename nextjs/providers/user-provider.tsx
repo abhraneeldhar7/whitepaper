@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { useAuth } from "@clerk/nextjs";
 import { getMe } from "@/lib/api/services/user";
 import { configureApiToken } from "@/lib/api/api-client";
+import { LAST_VISITED_WORKSPACEID_KEY } from "@/shared/constants";
+import { useDashboardStore } from "@/lib/zustand/store";
 import type { User } from "@/shared/types";
 
 interface UserContextType {
@@ -25,8 +27,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const fetchUserData = async () => {
     if (!isSignedIn) {
-      setUser(null);
+      // setUser(null);
       setLoading(false);
+      localStorage.removeItem(LAST_VISITED_WORKSPACEID_KEY);
+      useDashboardStore.setState({
+        activeWorkspace: null,
+        isLoadingActiveWorkspace: true,
+        availableWorkspacesMap: { isLoading: false, lastFetched: 0, workspaceIds: [] },
+        workspaceScreenMap: null,
+        projectScreenMap: [],
+        collectionScreenMap: [],
+        projects: [],
+        collections: [],
+        papers: [],
+        workspaces: [],
+        members: [],
+        lastMembersFetch: 0,
+      });
       return;
     }
 

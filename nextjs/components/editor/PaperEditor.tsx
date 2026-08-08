@@ -8,15 +8,15 @@ import { compressImage } from "@/lib/image";
 import { removeThumbnail, savePaper, uploadThumbnail } from "@/lib/api/services/papers";
 import { BANNER_MAX_HEIGHT_PIXELS, BANNER_MAX_WIDTH_PIXELS } from "@/shared/constants";
 import { Editor } from "@/components/editor/editor";
-import EditorFileTree from "@/components/editor/editor-filetree";
-import { useDashboard } from "@/components/dashboard/dashboard-provider";
-import { useDashboardStore } from "@/lib/zustand/store";
+import EditorSidebar from "@/components/editor/editor-sidebar";
 import "@/components/markdown-render/markdown-render.css";
 import "@/components/editor/editor.css";
 
 import { SITE_CONTENT_MAX_WIDTH } from "@/lib/design";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import ImageUpload from "@/components/dashboard/image-upload";
+import { Skeleton } from "../ui/skeleton";
+import { useDashboard, useDashboardStore } from "../dashboard/dashboard-provider";
 
 export default function PaperEditor({ paper }: { paper?: Paper }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -35,13 +35,7 @@ export default function PaperEditor({ paper }: { paper?: Paper }) {
   const savingRef = useRef(false);
   const pendingSaveRef = useRef(false);
 
-  const { resolveWorkspaceScreen } = useDashboard()
-  const workspaceId = useDashboardStore((s) => s.activeWorkspace?.workspaceId);
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    resolveWorkspaceScreen();
-  }, [workspaceId]);
 
   currentPaperRef.current = currentPaper;
   contentRef.current = contentState;
@@ -167,15 +161,18 @@ export default function PaperEditor({ paper }: { paper?: Paper }) {
     <div className={`p-1 md:p-2 bg-muted flex h-svh w-full transition-all ${sidebarOpen ? "md:gap-2" : "md:gap-0"}`}>
       <div className="hidden md:flex relative overflow-hidden h-full transition-all ease-out" style={{ width: sidebarOpen ? sidebarWidth : 0 }}>
         <div className="absolute top-0 h-full left-0 overflow-y-auto" style={{ width: sidebarWidth }}>
-          <EditorFileTree paper={currentPaper} />
+          <EditorSidebar paper={currentPaper} />
         </div>
       </div>
       <div className="rounded-md border bg-background min-h-0 flex-1 flex flex-col overflow-hidden p-1">
         <div className="flex gap-4 items-center p-1 shrink-0 justify-between">
           <div className="flex items-center gap-1">
-            <Button variant="secondary" className="mr-2" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}><SidebarIcon /></Button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <button className="text-base text-foreground/70 cursor-pointer hover:text-foreground transition-all h-9 sm:h-8 px-2 rounded-xs">Lorem ipsum dolor sit</button>
+            <Button variant="secondary" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}><SidebarIcon /></Button>
+            {/* <ChevronRight className="h-4 w-4 text-muted-foreground" /> */}
+            {currentPaper ?
+              <button className="text-base text-foreground/70 cursor-pointer hover:text-foreground font-[500] transition-all h-9 sm:h-8 px-2 rounded-xs">{currentPaper.title}</button> :
+              <Skeleton className="h-9 w-20" />
+            }
           </div>
           <div className="flex items-center gap-1 h-full">
             {isSaving &&

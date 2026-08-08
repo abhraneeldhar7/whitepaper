@@ -102,21 +102,23 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }));
 
     const data = await fetchWorkspaceScreen(workspaceId);
+    const projects = data.projects ?? [];
+    const papers = data.papers ?? [];
 
-    useDashboardStore.getState().upsertToProjects(data.projects);
-    useDashboardStore.getState().upsertToPapers(data.papers);
+    useDashboardStore.getState().upsertToProjects(projects);
+    useDashboardStore.getState().upsertToPapers(papers);
 
     useDashboardStore.setState({
       workspaceScreenMap: {
         lastFetched: Date.now(),
         isLoading: false,
         workspaceId,
-        projectIdArray: data.projects.map((p) => p.data.projectId),
-        paperIdArray: data.papers.map((p) => p.data.paperId),
+        projectIdArray: projects.map((p) => p.data.projectId),
+        paperIdArray: papers.map((p) => p.data.paperId),
       },
     });
 
-    return data;
+    return { projects, papers };
   }
 
   async function resolveProjectScreen(projectId: string): Promise<ProjectScreenData | null> {
@@ -149,9 +151,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }));
 
     const data = await fetchProjectScreen(projectId);
+    const collections = data.collections ?? [];
+    const papers = data.papers ?? [];
 
-    useDashboardStore.getState().upsertToCollections(data.collections);
-    useDashboardStore.getState().upsertToPapers(data.papers);
+    useDashboardStore.getState().upsertToCollections(collections);
+    useDashboardStore.getState().upsertToPapers(papers);
 
     useDashboardStore.setState({
       projectScreenMap: [
@@ -160,13 +164,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           lastFetched: Date.now(),
           isLoading: false,
           projectId,
-          collectionIdArray: data.collections.map((c) => c.data.collectionId),
-          paperIdArray: data.papers.map((p) => p.data.paperId),
+          collectionIdArray: collections.map((c) => c.data.collectionId),
+          paperIdArray: papers.map((p) => p.data.paperId),
         },
       ],
     });
 
-    return data;
+    return { collections, papers };
   }
 
   async function resolveCollectionScreen(collectionId: string): Promise<PaperWithRole[] | null> {
@@ -195,8 +199,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }));
 
     const data = await fetchCollectionScreen(collectionId);
+    const papers = data.papers ?? [];
 
-    useDashboardStore.getState().upsertToPapers(data.papers);
+    useDashboardStore.getState().upsertToPapers(papers);
 
     useDashboardStore.setState({
       collectionScreenMap: [
@@ -207,12 +212,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           lastFetched: Date.now(),
           isLoading: false,
           collectionId,
-          paperIdArray: data.papers.map((p) => p.data.paperId),
+          paperIdArray: papers.map((p) => p.data.paperId),
         },
       ],
     });
 
-    return data.papers;
+    return papers;
   }
 
   async function resolveAvailableWorkspaces(): Promise<Workspace[] | null> {
