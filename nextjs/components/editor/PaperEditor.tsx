@@ -8,6 +8,9 @@ import { compressImage } from "@/lib/image";
 import { removeThumbnail, savePaper, uploadThumbnail } from "@/lib/api/services/papers";
 import { BANNER_MAX_HEIGHT_PIXELS, BANNER_MAX_WIDTH_PIXELS } from "@/shared/constants";
 import { Editor } from "@/components/editor/editor";
+import EditorFileTree from "@/components/editor/editor-filetree";
+import { useDashboard } from "@/components/dashboard/dashboard-provider";
+import { useDashboardStore } from "@/lib/zustand/store";
 import "@/components/markdown-render/markdown-render.css";
 import "@/components/editor/editor.css";
 
@@ -31,6 +34,15 @@ export default function PaperEditor({ paper }: { paper?: Paper }) {
   const originalPaperRef = useRef(originalPaper);
   const savingRef = useRef(false);
   const pendingSaveRef = useRef(false);
+
+  const { resolveWorkspaceScreen } = useDashboard()
+  const workspaceId = useDashboardStore((s) => s.activeWorkspace?.workspaceId);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    resolveWorkspaceScreen();
+  }, [workspaceId]);
+
   currentPaperRef.current = currentPaper;
   contentRef.current = contentState;
   originalPaperRef.current = originalPaper;
@@ -154,7 +166,8 @@ export default function PaperEditor({ paper }: { paper?: Paper }) {
   return (
     <div className={`p-1 md:p-2 bg-muted flex h-svh w-full transition-all ${sidebarOpen ? "md:gap-2" : "md:gap-0"}`}>
       <div className="hidden md:flex relative overflow-hidden h-full transition-all ease-out" style={{ width: sidebarOpen ? sidebarWidth : 0 }}>
-        <div className="absolute top-0 h-full left-0" style={{ width: sidebarWidth }}>
+        <div className="absolute top-0 h-full left-0 overflow-y-auto" style={{ width: sidebarWidth }}>
+          <EditorFileTree paper={currentPaper} />
         </div>
       </div>
       <div className="rounded-md border bg-background min-h-0 flex-1 flex flex-col overflow-hidden p-1">

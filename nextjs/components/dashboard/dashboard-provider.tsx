@@ -86,6 +86,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (!workspaceId) return null;
 
     const existing = useDashboardStore.getState().workspaceScreenMap;
+    if (existing?.isLoading) return null;
     if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
       const { projects, papers } = useDashboardStore.getState();
       return {
@@ -121,6 +122,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   async function resolveProjectScreen(projectId: string): Promise<ProjectScreenData | null> {
     const maps = useDashboardStore.getState().projectScreenMap;
     const existing = maps.find((psc) => psc.projectId === projectId);
+    if (existing?.isLoading) return null;
     if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
       const { collections, papers } = useDashboardStore.getState();
       return {
@@ -170,6 +172,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   async function resolveCollectionScreen(collectionId: string): Promise<PaperWithRole[] | null> {
     const maps = useDashboardStore.getState().collectionScreenMap;
     const existing = maps.find((csc) => csc.collectionId === collectionId);
+    if (existing?.isLoading) return null;
     if (existing && Date.now() - existing.lastFetched < DASHBOARD_IDLE_REFRESH_SECONDS * 1000) {
       const { papers } = useDashboardStore.getState();
       return papers.filter((p) => existing.paperIdArray.includes(p.data.paperId));

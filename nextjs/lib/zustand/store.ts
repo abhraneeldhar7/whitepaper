@@ -20,7 +20,7 @@ interface WorkspaceScreenMap {
   projectIdArray: string[];
 }
 
-interface ProjectScreenMap {
+export interface ProjectScreenMap {
   lastFetched: number;
   isLoading: boolean;
   projectId: string;
@@ -28,7 +28,7 @@ interface ProjectScreenMap {
   collectionIdArray: string[];
 }
 
-interface CollectionScreenMap {
+export interface CollectionScreenMap {
   lastFetched: number;
   isLoading: boolean;
   collectionId: string;
