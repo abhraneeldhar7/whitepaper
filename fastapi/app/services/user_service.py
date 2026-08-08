@@ -1,3 +1,5 @@
+import random
+import string
 from typing import Optional
 
 from sqlalchemy import select
@@ -43,3 +45,11 @@ async def create_user(
     )
     db.add(user)
     return user
+
+
+async def generate_username(db: AsyncSession, email: str) -> str:
+    base = email.split("@")[0]
+    username = base
+    while await username_exists(db, username):
+        username = base + "".join(random.choices(string.ascii_lowercase, k=4))
+    return username

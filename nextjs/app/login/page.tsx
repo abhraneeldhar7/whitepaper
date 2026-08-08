@@ -388,8 +388,8 @@ export default function LoginPage() {
   };
 
   const redirectUrl = useMemo(() => {
-    if (typeof window === "undefined") return "/dashboard";
-    return new URLSearchParams(window.location.search).get("redirect_url") || "/dashboard";
+    if (typeof window === "undefined") return "/sso";
+    return new URLSearchParams(window.location.search).get("redirect_url") || "/sso";
   }, []);
 
   const handleGoogleAuthClick = async () => {
@@ -405,7 +405,7 @@ export default function LoginPage() {
     try {
       await signIn.authenticateWithRedirect({
         strategy: "oauth_google",
-        redirectUrl: "/welcome",
+        redirectUrl: "/sso",
         redirectUrlComplete: redirectUrl,
       });
     } catch (err: any) {

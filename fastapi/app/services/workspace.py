@@ -1,3 +1,5 @@
+import random
+import string
 import uuid
 from dataclasses import dataclass
 
@@ -25,6 +27,13 @@ from app.utils.helpers import now
 async def workspace_slug_exists(db: AsyncSession, slug: str) -> bool:
     result = await db.execute(select(Workspace).where(Workspace.workspaceSlug == slug))
     return result.scalar_one_or_none() is not None
+
+
+async def generate_workspace_slug(db: AsyncSession, base: str) -> str:
+    slug = base
+    while await workspace_slug_exists(db, slug):
+        slug = base + "".join(random.choices(string.ascii_lowercase, k=4))
+    return slug
 
 
 async def get_workspace_by_id(

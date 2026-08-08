@@ -1,5 +1,6 @@
 export const PRIVATE = {
   ME: "/private/users/me",
+  USER_PROVISION: "/private/users/provision",
   LIST_WORKSPACES: "/private/workspaces/list",
   WORKSPACE_ACTIVE: "/private/workspaces/active",
   DASHBOARD_PROJECTS: "/private/dashboard/projects",

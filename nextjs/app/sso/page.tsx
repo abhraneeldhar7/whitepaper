@@ -1,32 +1,20 @@
-"use client";
-
-import { useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { useClerk } from "@clerk/nextjs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoaderCircle, TriangleAlert, UserRoundIcon } from "lucide-react";
 import BrownBgPattern from "../../public/images/landingpage/brownBgPattern2.jpg";
 import appLogo from "../../public/images/appLogo.png";
 import Image from "next/image";
-import { provisionUser } from "@/lib/api/services/user";
+import { AuthenticateWithRedirectCallback } from "@clerk/nextjs";
 
-export default function WelcomePage() {
-  const { session } = useClerk();
-  const hasRan = useRef(false);
-  const provision = useCallback(async () => {
-    await provisionUser();
-    await session?.reload();
-    window.location.href = "/dashboard";
-  }, []);
-
-  useEffect(() => {
-    if (hasRan.current) return;
-    hasRan.current = true;
-    provision();
-  }, [provision]);
-
+export default function SsoPage() {
   return (
     <div className="px-4 py-10 max-w-[600px] w-full flex flex-col mx-auto h-screen">
+      <AuthenticateWithRedirectCallback
+        signInUrl="/login"
+        signUpUrl="/login"
+        signInFallbackRedirectUrl="/welcome"
+        signUpFallbackRedirectUrl="/welcome"
+      />
+
       <div className="relative w-full aspect-2/1 px-5 py-20">
         <h1 className="text-[white] font-[450] text-[30px]">
           <span className="text-[32px]">Welcome to </span>

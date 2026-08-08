@@ -125,9 +125,12 @@ async def _fetch_clerk_roles(user_id: str) -> list[dict]:
 
 
 async def _update_clerk_roles(user_id: str, roles: list[dict]) -> None:
+    user = await clerk_client.users.get_async(user_id=user_id)
+    metadata = user.public_metadata or {}
+    metadata["roles"] = roles
     await clerk_client.users.update_metadata_async(
         user_id=user_id,
-        public_metadata={"roles": roles},
+        public_metadata=metadata,
     )
 
 
